@@ -5,11 +5,13 @@ import http.server
 import socketserver
 import os
 import json
-import subprocess
 import datetime
 import tempfile
 import shutil
 from urllib.parse import urlparse, parse_qs
+
+# 直接导入核心比较函数，避免外部进程调用
+from compare_excel_web import compare_excel_files
 
 # 替代cgi模块的简单multipart解析器
 
@@ -70,9 +72,6 @@ PORT = 8000
 
 # 项目根目录
 PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
-
-# 核心Python脚本路径
-CORE_SCRIPT = os.path.join(PROJECT_ROOT, "compare_excel_web.py")
 
 # 创建results文件夹（如果不存在）
 RESULTS_FOLDER = os.path.join(PROJECT_ROOT, "results")
@@ -141,52 +140,36 @@ class RequestHandler(http.server.SimpleHTTPRequestHandler):
             original_filename = os.path.basename(baseline_file_path).replace('.xlsx', '')
             timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
             
-            # 构建临时目录结构 - 优化：使用更高效的目录创建方式
-            temp_dir = tempfile.mkdtemp()
-            temp_my_dir = os.path.join(temp_dir, "my")
-            temp_from_dir = os.path.join(temp_dir, "from")
-            
-            # 一次性创建所有目录
-            os.makedirs(temp_my_dir, exist_ok=True)
-            os.makedirs(temp_from_dir, exist_ok=True)
-            
-            # 目标文件路径
-            temp_baseline = os.path.join(temp_my_dir, "销售毛利分析表.xlsx")
-            temp_compare = os.path.join(temp_from_dir, "销售毛利分析表.xlsx")
-            
-            # 改回使用shutil.copy2，避免原始文件被意外删除
-            # 对于小文件，copy2的性能影响可以忽略
-            shutil.copy2(baseline_file_path, temp_baseline)
-            shutil.copy2(compare_file_path, temp_compare)
+            # 不需要创建临时目录和复制文件，直接使用上传的文件路径
             
             # 生成结果文件路径
             result_baseline = os.path.join(RESULTS_FOLDER, f"{original_filename}_my_比较结果_{timestamp}.xlsx")
             result_compare = os.path.join(RESULTS_FOLDER, f"{original_filename}_from_比较结果_{timestamp}.xlsx")
             
-            # 优化：使用python -u禁用输出缓冲，更快获取脚本输出
-            command = [
-                'python',
-                '-u',  # 禁用输出缓冲
-                CORE_SCRIPT,
-                temp_baseline,  # 基准文件路径
-                temp_compare,  # 比较文件路径
-                result_baseline,  # 输出基准文件路径
-                result_compare,  # 输出比较文件路径
-                original_filename  # 原始文件名
-            ]
+            print(f"直接调用核心比较函数...")
             
-            print(f"执行Python命令: {' '.join(command)}")
+            # 直接调用核心比较函数，避免外部进程开销
+            # 重定向stdout以捕获输出
+            import io
+            import sys
+            from contextlib import redirect_stdout
             
-            # 优化：使用更高效的subprocess调用选项
-            result = subprocess.run(
-                command,
-                capture_output=True,
-                text=True,
-                cwd=temp_dir,
-                timeout=300,  # 5分钟超时
-                bufsize=0,  # 无缓冲I/O
-                universal_newlines=True  # 与text=True功能相同，但明确指定
-            )
+            f = io.StringIO()
+            with redirect_stdout(f):
+                # 直接使用上传的文件路径，无需复制到临时目录
+                compare_excel_files(
+                    baseline_file_path,  # 基准文件路径
+                    compare_file_path,   # 比较文件路径
+                    result_baseline,     # 输出基准文件路径
+                    result_compare,      # 输出比较文件路径
+                    original_filename,   # 原始文件名
+                    timestamp            # 时间戳
+                )
+            
+            # 获取函数输出
+            stdout = f.getvalue()
+            stderr = ""  # 直接调用不会产生stderr
+            returncode = 0  # 假设成功，实际应用中需要添加错误处理
             
             # 优化：直接使用已知的结果文件路径，避免遍历目录
             result_files = []
@@ -206,11 +189,11 @@ class RequestHandler(http.server.SimpleHTTPRequestHandler):
             
             # 构造响应
             response = {
-                'success': result.returncode == 0,
-                'message': '比较完成' if result.returncode == 0 else '比较失败',
+                'success': returncode == 0,
+                'message': '比较完成' if returncode == 0 else '比较失败',
                 'resultFiles': result_files,
-                'stdout': result.stdout,
-                'stderr': result.stderr
+                'stdout': stdout,
+                'stderr': stderr
             }
             
             # 发送响应
@@ -235,14 +218,11 @@ class RequestHandler(http.server.SimpleHTTPRequestHandler):
             }
             self.wfile.write(json.dumps(error_response).encode('utf-8'))
         finally:
-            # 清理临时文件和目录
-            # 注意：使用shutil.copy2时，原始文件仍然存在，需要单独删除
+            # 清理临时文件
             if 'baseline_file_path' in locals() and os.path.exists(baseline_file_path):
                 os.unlink(baseline_file_path)
             if 'compare_file_path' in locals() and os.path.exists(compare_file_path):
                 os.unlink(compare_file_path)
-            if 'temp_dir' in locals() and os.path.exists(temp_dir):
-                shutil.rmtree(temp_dir, ignore_errors=True)  # 添加ignore_errors=True，避免删除失败
 
 # 创建服务器
 with socketserver.TCPServer(("", PORT), RequestHandler) as httpd:

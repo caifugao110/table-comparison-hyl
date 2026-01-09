@@ -57,19 +57,18 @@ def compare_excel_files(baseline_path, compare_path, output_baseline_path, outpu
 
     print(f"开始比较 ({baseline_folder}文件夹: {baseline_max_row}行 x {baseline_max_col}列, {compare_folder}文件夹: {compare_max_row}行 x {compare_max_col}列)...")
 
-    # 3. 预先获取所有单元格值
-    cells_baseline = {}
-    cells_compare = {}
+    # 3. 只获取需要的单元格值，避免占用过多内存
+    # 先获取表头（第3行）用于列匹配
+    header_baseline = {}
+    header_compare = {}
     
-    # 获取基准文件所有单元格值
-    for r in range(1, baseline_max_row + 1):
-        for c in range(1, baseline_max_col + 1):
-            cells_baseline[(r, c)] = ws_baseline.cell(row=r, column=c).value
+    # 获取基准文件表头
+    for c in range(1, baseline_max_col + 1):
+        header_baseline[c] = ws_baseline.cell(row=3, column=c).value.strip() if ws_baseline.cell(row=3, column=c).value else ""
     
-    # 获取比较文件所有单元格值
-    for r in range(1, compare_max_row + 1):
-        for c in range(1, compare_max_col + 1):
-            cells_compare[(r, c)] = ws_compare.cell(row=r, column=c).value
+    # 获取比较文件表头
+    for c in range(1, compare_max_col + 1):
+        header_compare[c] = ws_compare.cell(row=3, column=c).value.strip() if ws_compare.cell(row=3, column=c).value else ""
     
     # 4. 基于关键字段的行匹配算法
     def get_col_content(col_num, cells, max_row):
@@ -77,18 +76,17 @@ def compare_excel_files(baseline_path, compare_path, output_baseline_path, outpu
         return tuple(cells.get((r, col_num), None) for r in range(1, max_row + 1))
     
     # 从第三行查找关键字段的列索引
-    def find_key_columns(ws, cells, max_col):
+    def find_key_columns(ws, header_dict):
         """从第三行查找关键字段的列索引"""
         key_cols = {}
-        for col in range(1, max_col + 1):
-            cell_value = cells.get((3, col), "").strip()  # 第三行是表头
-            if cell_value in KEY_FIELDS:
-                key_cols[cell_value] = col
+        for col, header in header_dict.items():
+            if header in KEY_FIELDS:
+                key_cols[header] = col
         return key_cols
     
     # 查找基准文件和比较文件的关键字段列索引
-    key_cols_baseline = find_key_columns(ws_baseline, cells_baseline, baseline_max_col)
-    key_cols_compare = find_key_columns(ws_compare, cells_compare, compare_max_col)
+    key_cols_baseline = find_key_columns(ws_baseline, header_baseline)
+    key_cols_compare = find_key_columns(ws_compare, header_compare)
     
     print(f"\n基准文件关键字段列索引: {key_cols_baseline}")
     print(f"比较文件关键字段列索引: {key_cols_compare}")
@@ -103,18 +101,19 @@ def compare_excel_files(baseline_path, compare_path, output_baseline_path, outpu
     if has_all_keys_baseline and has_all_keys_compare:
         print("\n使用关键字段进行行匹配...")
         
-        # 构建行关键字映射：关键字 -> 行号
-        def build_row_key_map(cells, max_row, key_cols):
+        # 构建行关键字映射：关键字 -> 行号，直接从工作表获取值
+        def build_row_key_map(ws, max_row, key_cols):
             row_key_map = {}
             for row in range(4, max_row + 1):  # 从第4行开始是数据行
-                key_values = tuple(cells.get((row, key_cols[field]), None) for field in KEY_FIELDS)
+                # 直接从工作表获取关键字段值
+                key_values = tuple(ws.cell(row=row, column=key_cols[field]).value for field in KEY_FIELDS)
                 # 只有当所有关键字段都有值时才进行映射
                 if all(v is not None for v in key_values):
                     row_key_map[key_values] = row
             return row_key_map
         
-        row_key_map_baseline = build_row_key_map(cells_baseline, baseline_max_row, key_cols_baseline)
-        row_key_map_compare = build_row_key_map(cells_compare, compare_max_row, key_cols_compare)
+        row_key_map_baseline = build_row_key_map(ws_baseline, baseline_max_row, key_cols_baseline)
+        row_key_map_compare = build_row_key_map(ws_compare, compare_max_row, key_cols_compare)
         
         # 建立行映射：基准行 -> 比较行
         for key in row_key_map_baseline:
@@ -125,48 +124,24 @@ def compare_excel_files(baseline_path, compare_path, output_baseline_path, outpu
         
         print(f"基于关键字段匹配到 {len(row_mapping)} 行")
     else:
-        print("\n无法找到所有关键字段，使用默认行匹配...")
-        # 原来的行匹配逻辑
-        def get_row_content(row_num, cells, max_col):
-            """获取一行的所有单元格内容，作为比较的键"""
-            return tuple(cells.get((row_num, c), None) for c in range(1, max_col + 1))
-        
-        # 构建行内容映射
-        row_contents_baseline = {r: get_row_content(r, cells_baseline, baseline_max_col) for r in range(1, baseline_max_row + 1)}
-        row_contents_compare = {r: get_row_content(r, cells_compare, compare_max_col) for r in range(1, compare_max_row + 1)}
-        
-        # 先找到完全匹配的行
-        for row_baseline in row_contents_baseline:
-            content_baseline = row_contents_baseline[row_baseline]
-            for row_compare in row_contents_compare:
-                if row_compare not in row_mapping.values() and content_baseline == row_contents_compare[row_compare]:
-                    row_mapping[row_baseline] = row_compare
-                    break
-        
-        # 如果没有找到足够的匹配，使用简单的索引映射
-        if len(row_mapping) < min(baseline_max_row, compare_max_row) // 2:
-            min_rows = min(baseline_max_row, compare_max_row)
-            row_mapping = {r: r for r in range(1, min_rows + 1)}
+        print("\n无法找到所有关键字段，使用简单索引映射...")
+        # 直接使用简单的索引映射，避免复杂的行内容比较
+        min_rows = min(baseline_max_row, compare_max_row)
+        row_mapping = {r: r for r in range(1, min_rows + 1)}
+        print(f"使用简单索引映射，匹配 {len(row_mapping)} 行")
     
-    # 列匹配：基准列号 -> 比较列号
-    col_mapping = {}
+    # 直接基于列名创建映射，避免复杂的列内容比较
+    # 构建列名到列号的映射
+    baseline_col_name_to_num = {name: col for col, name in header_baseline.items() if name}
+    compare_col_name_to_num = {name: col for col, name in header_compare.items() if name}
     
-    # 构建列内容映射
-    col_contents_baseline = {c: get_col_content(c, cells_baseline, baseline_max_row) for c in range(1, baseline_max_col + 1)}
-    col_contents_compare = {c: get_col_content(c, cells_compare, compare_max_row) for c in range(1, compare_max_col + 1)}
+    # 基于列名匹配创建列映射
+    col_name_map = {}
+    for name, col_b in baseline_col_name_to_num.items():
+        if name in compare_col_name_to_num:
+            col_name_map[col_b] = compare_col_name_to_num[name]    
     
-    # 先找到完全匹配的列
-    for col_baseline in col_contents_baseline:
-        content_baseline = col_contents_baseline[col_baseline]
-        for col_compare in col_contents_compare:
-            if col_compare not in col_mapping.values() and content_baseline == col_contents_compare[col_compare]:
-                col_mapping[col_baseline] = col_compare
-                break
-    
-    # 如果没有找到足够的匹配，使用简单的索引映射
-    if len(col_mapping) < min(baseline_max_col, compare_max_col) // 2:
-        min_cols = min(baseline_max_col, compare_max_col)
-        col_mapping = {c: c for c in range(1, min_cols + 1)}
+    print(f"基于列名匹配到 {len(col_name_map)} 列")
     
     # 5. 比较单元格
     changes_count = 0
@@ -181,33 +156,15 @@ def compare_excel_files(baseline_path, compare_path, output_baseline_path, outpu
     for row_baseline in row_mapping:
         row_compare = row_mapping[row_baseline]
         
-        # 获取当前行的所有列索引
-        baseline_cols = range(1, baseline_max_col + 1)
-        compare_cols = range(1, compare_max_col + 1)
-        
-        # 创建列映射（基于列名匹配）
-        col_name_map = {}
-        for col_b in baseline_cols:
-            # 获取基准文件列名
-            col_name_b = cells_baseline.get((3, col_b), "").strip()
-            if not col_name_b:
-                continue
-            
-            # 在比较文件中查找相同列名
-            for col_c in compare_cols:
-                col_name_c = cells_compare.get((3, col_c), "").strip()
-                if col_name_c == col_name_b:
-                    col_name_map[col_b] = col_c
-                    break
-        
-        # 比较匹配的列
+        # 比较匹配的列（直接使用之前创建的col_name_map）
         for col_baseline, col_compare in col_name_map.items():
             # 跳过关键字段列（它们已经匹配，不需要比较）
             if col_baseline in key_col_set_baseline or col_compare in key_col_set_compare:
                 continue
             
-            val_baseline = cells_baseline.get((row_baseline, col_baseline), None)
-            val_compare = cells_compare.get((row_compare, col_compare), None)
+            # 直接从工作表获取值进行比较
+            val_baseline = ws_baseline.cell(row=row_baseline, column=col_baseline).value
+            val_compare = ws_compare.cell(row=row_compare, column=col_compare).value
             
             # 只在值不同时标记为黄色（数值变化）
             if val_baseline != val_compare:
@@ -219,19 +176,20 @@ def compare_excel_files(baseline_path, compare_path, output_baseline_path, outpu
     print("\n开始标记新增行和删除行...")
     
     # 获取所有数据行的关键字映射
-    def get_all_row_keys(cells, max_row, key_cols):
+    def get_all_row_keys(ws, max_row, key_cols):
         """获取所有数据行的关键字映射"""
         all_row_keys = {}
         for row in range(4, max_row + 1):  # 从第4行开始是数据行
-            key_values = tuple(cells.get((row, key_cols[field]), None) for field in KEY_FIELDS)
+            # 直接从工作表获取关键字段值
+            key_values = tuple(ws.cell(row=row, column=key_cols[field]).value for field in KEY_FIELDS)
             if all(v is not None for v in key_values):
                 all_row_keys[key_values] = row
         return all_row_keys
     
     if has_all_keys_baseline and has_all_keys_compare:
         # 获取所有数据行的关键字映射
-        all_baseline_keys = get_all_row_keys(cells_baseline, baseline_max_row, key_cols_baseline)
-        all_compare_keys = get_all_row_keys(cells_compare, compare_max_row, key_cols_compare)
+        all_baseline_keys = get_all_row_keys(ws_baseline, baseline_max_row, key_cols_baseline)
+        all_compare_keys = get_all_row_keys(ws_compare, compare_max_row, key_cols_compare)
         
         # 标记删除行（基准文件中有，比较文件中没有）
         deleted_rows = 0
