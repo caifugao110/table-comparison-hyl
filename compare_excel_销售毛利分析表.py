@@ -334,16 +334,17 @@ def compare_excel_files(baseline_path, compare_path, output_baseline_path, outpu
 
 if __name__ == "__main__":
     # 创建results文件夹（如果不存在）
-    results_folder = "d:\\mygit\\table-comparison-hyl\\results"
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    results_folder = os.path.join(current_dir, "results")
     os.makedirs(results_folder, exist_ok=True)
     
     # ---------------- 配置区域 ----------------
     # my文件夹是基准文件，from文件夹是比较文件
-    baseline_file = "d:\\mygit\\table-comparison-hyl\\my\\销售毛利分析表.xlsx"  # my文件夹文件路径（基准）
-    compare_file = "d:\\mygit\\table-comparison-hyl\\from\\销售毛利分析表.xlsx"  # from文件夹文件路径（比较）
+    baseline_file = os.path.join(current_dir, "my", "销售毛利分析表.xlsx")  # my文件夹文件路径（基准）
+    compare_file = os.path.join(current_dir, "from", "销售毛利分析表.xlsx")  # from文件夹文件路径（比较）
     
     # 结果文件保存目录
-    results_folder = "d:\\mygit\\table-comparison-hyl\\results"
+    results_folder = os.path.join(current_dir, "results")
     
     # 基于文件夹名称生成输出文件名
     baseline_folder = os.path.basename(os.path.dirname(baseline_file))

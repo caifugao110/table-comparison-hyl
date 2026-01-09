@@ -72,13 +72,13 @@
 
 ```python
 # 基准文件路径（my文件夹）
-baseline_file = "d:\\mygit\\table-comparison-hyl\\my\\销售毛利分析表.xlsx"
+baseline_file = "my\\销售毛利分析表.xlsx"
 
 # 比较文件路径（from文件夹）
-compare_file = "d:\\mygit\\table-comparison-hyl\\from\\销售毛利分析表.xlsx"
+compare_file = "from\\销售毛利分析表.xlsx"
 
 # 结果文件保存目录
-results_folder = "d:\\mygit\\table-comparison-hyl\\results"
+results_folder = "results"
 ```
 
 ### 运行脚本 ▶️
