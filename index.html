@@ -1,91 +1,195 @@
 <!DOCTYPE html>
-<html lang="zh-CN" charset="UTF-8">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Excel比较工具</title>
+    <title>销售毛利分析表比较工具</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-        
+        :root {
+            --primary: #667eea;
+            --primary-dark: #5a6fd8;
+            --secondary: #764ba2;
+            --light: #f8f9ff;
+            --dark: #333;
+            --gray: #6c757d;
+            --success: #28a745;
+            --danger: #dc3545;
+            --danger-dark: #c82333;
+            --warning: #ffc107;
+            --info: #17a2b8;
+            --border-radius: 16px;
+            --box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s ease;
+        }
         body {
-            font-family: 'Microsoft YaHei', sans-serif;
+            font-family: 'Segoe UI', 'Microsoft YaHei', Arial, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
             padding: 20px;
+            color: var(--dark);
+            line-height: 1.6;
         }
-        
         .container {
-            max-width: 900px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-            overflow: hidden;
-        }
-        
-        .header {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-            color: white;
-            padding: 30px;
-            text-align: center;
-        }
-        
-        .header h1 {
-            font-size: 2.5em;
-            margin-bottom: 10px;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-        }
-        
-        .header p {
-            font-size: 1.1em;
-            opacity: 0.9;
-        }
-        
-        .content {
+            background: #fff;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
             padding: 40px;
+            max-width: 1000px;
+            width: 100%;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            animation: fadeIn 0.8s ease-out;
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.95);
         }
-        
+        .container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 6px;
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .header {
+            margin-bottom: 30px;
+            position: relative;
+        }
+        .header h1 {
+            font-size: 38px;
+            margin-bottom: 15px;
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header p {
+            color: var(--gray);
+            margin-bottom: 8px;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .content {
+            padding: 0;
+        }
         .section {
             margin-bottom: 30px;
+            text-align: left;
         }
-        
         .section h2 {
-            color: #333;
+            color: var(--dark);
             margin-bottom: 20px;
             font-size: 1.5em;
-            border-bottom: 2px solid #4facfe;
+            border-bottom: 2px solid var(--primary);
             padding-bottom: 10px;
+            font-weight: 700;
         }
-        
         .upload-section {
             display: flex;
-            flex-direction: column;
+            flex-direction: row;
             gap: 20px;
             margin-bottom: 30px;
+            flex-wrap: wrap;
         }
-        
         .upload-group {
             display: flex;
             flex-direction: column;
             gap: 10px;
+            flex: 1;
+            min-width: 300px;
+        }
+        /* 拖拽样式 */
+        /* 拖拽样式 */
+        .upload-group.drag-over .file-upload-area {
+            border-color: var(--primary);
+            background-color: rgba(102, 126, 234, 0.05);
         }
         
-        .upload-group label {
-            font-weight: bold;
-            color: #555;
-            font-size: 1.1em;
-        }
-        
-        .file-upload {
+        /* 文件上传区域样式 */
+        .file-upload-area {
             position: relative;
-            display: inline-block;
             width: 100%;
+            height: 200px;
+            border: 2px dashed #e0e0e0;
+            border-radius: var(--border-radius);
+            background-color: #fafafa;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 15px;
         }
         
+        .file-upload-area:hover {
+            border-color: var(--primary);
+            background-color: rgba(102, 126, 234, 0.05);
+        }
+        
+        /* 上传内容样式 */
+        .upload-content {
+            text-align: center;
+            padding: 20px;
+        }
+        
+        /* 上传图标样式 */
+        .upload-icon {
+            font-size: 48px;
+            color: var(--primary);
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+        }
+        
+        .file-upload-area:hover .upload-icon {
+            transform: scale(1.1);
+        }
+        
+        /* 上传标题样式 */
+        .upload-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--dark);
+            margin-bottom: 8px;
+        }
+        
+        /* 上传描述样式 */
+        .upload-desc {
+            font-size: 14px;
+            color: var(--gray);
+            margin-bottom: 8px;
+        }
+        
+        /* 上传格式样式 */
+        .upload-format {
+            font-size: 12px;
+            color: var(--gray);
+            opacity: 0.8;
+        }
+        
+        /* 文件输入样式 */
         .file-input {
             opacity: 0;
             position: absolute;
@@ -96,82 +200,87 @@
             cursor: pointer;
         }
         
-        .file-upload-button {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 12px 24px;
-            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 1em;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            width: 100%;
-            justify-content: center;
+
+        
+        /* 已选择文件时的样式 */
+        .file-upload-area.file-selected {
+            border-color: var(--success);
+            background-color: rgba(40, 167, 69, 0.05);
         }
         
-        .file-upload-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(250, 112, 154, 0.4);
+        .file-upload-area.file-selected .upload-icon {
+            color: var(--success);
         }
         
+        .file-upload-area.file-selected .upload-title {
+            color: var(--success);
+        }
         .file-info {
             margin-top: 10px;
-            padding: 10px;
-            background: #f8f9fa;
-            border-radius: 8px;
+            padding: 15px;
+            background: var(--light);
+            border-radius: var(--border-radius);
             font-family: 'Courier New', monospace;
             font-size: 0.9em;
-            color: #666;
+            color: var(--gray);
             word-break: break-all;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
         }
-        
         .execute-section {
             display: flex;
             justify-content: center;
             margin: 40px 0;
         }
-        
         .btn {
-            padding: 15px 40px;
+            padding: 18px 45px;
             border: none;
-            border-radius: 8px;
-            font-size: 1.2em;
-            font-weight: bold;
+            border-radius: 30px;
+            font-size: 18px;
+            font-weight: 700;
             cursor: pointer;
-            transition: all 0.3s ease;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+            width: fit-content;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
         }
-        
         .btn-primary {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
             color: white;
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
         }
-        
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(79, 172, 254, 0.4);
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 25px rgba(102, 126, 234, 0.5);
+            background: linear-gradient(45deg, var(--primary-dark), var(--secondary));
         }
-        
-        .btn-primary:active {
-            transform: translateY(0);
+        .btn-primary::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.5s;
         }
-        
+        .btn-primary:hover:not(:disabled)::before {
+            left: 100%;
+        }
         .btn:disabled {
             opacity: 0.6;
             cursor: not-allowed;
             transform: none;
+            box-shadow: none;
+            background: linear-gradient(45deg, #b3b3b3, #808080) !important;
         }
-        
         /* 点击动画效果 */
         .btn-clicked {
             animation: btnClick 0.3s ease-out;
         }
-        
         @keyframes btnClick {
             0% {
                 transform: scale(1);
@@ -183,119 +292,109 @@
                 transform: scale(1);
             }
         }
-        
         .progress-bar {
             width: 100%;
-            height: 8px;
-            background: #ddd;
-            border-radius: 4px;
-            overflow: hidden;
+            height: 10px;
+            background-color: #e9ecef;
+            border-radius: 5px;
             margin: 20px 0;
+            overflow: hidden;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
         }
-        
         .progress-fill {
             height: 100%;
-            background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%);
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
             width: 0%;
-            transition: width 0.3s ease;
-            border-radius: 4px;
+            transition: width 0.5s ease;
+            border-radius: 5px;
         }
-        
         .status-section {
-            background: #f8f9fa;
-            border-radius: 8px;
-            padding: 20px;
+            background: var(--light);
+            border-radius: var(--border-radius);
+            padding: 25px;
             margin-bottom: 30px;
-            border-left: 5px solid #4facfe;
+            border-left: 5px solid var(--primary);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
         }
-        
         #status {
             font-family: 'Courier New', monospace;
             font-size: 1em;
             line-height: 1.6;
-            color: #333;
+            color: var(--dark);
             white-space: pre-wrap;
             max-height: 300px;
             overflow-y: auto;
+            text-align: left;
         }
-        
         .results-section {
             margin-top: 40px;
         }
-        
         .results-list {
             display: flex;
             flex-direction: column;
             gap: 15px;
             margin-top: 20px;
         }
-        
         .result-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
             padding: 15px;
-            background: #f8f9fa;
-            border-radius: 8px;
-            transition: transform 0.2s ease;
+            background: var(--light);
+            border-radius: var(--border-radius);
+            transition: var(--transition);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+            position: relative;
+            overflow: hidden;
         }
-        
+        .result-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent);
+            transform: translateX(-100%);
+        }
         .result-item:hover {
-            transform: translateX(5px);
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            transform: translateX(8px);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
         }
-        
+        .result-item:hover::before {
+            transform: translateX(100%);
+            transition: transform 0.6s;
+        }
         .result-info {
             display: flex;
             flex-direction: column;
             gap: 5px;
+            flex: 1;
         }
-        
         .result-name {
-            font-weight: bold;
-            color: #333;
+            font-weight: 700;
+            color: var(--dark);
+            font-size: 16px;
         }
-        
         .result-path {
             font-size: 0.9em;
-            color: #666;
+            color: var(--gray);
             font-family: 'Courier New', monospace;
             word-break: break-all;
         }
-        
         .btn-secondary {
-            padding: 8px 16px;
-            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+            padding: 12px 24px;
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
             color: white;
             font-size: 0.9em;
+            border-radius: var(--border-radius);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
         }
-        
-        .hidden {
-            display: none;
+        .btn-secondary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 15px rgba(102, 126, 234, 0.4);
+            background: linear-gradient(45deg, var(--primary-dark), var(--secondary));
         }
-        
-        .success {
-            color: #28a745;
-        }
-        
-        .error {
-            color: #dc3545;
-        }
-        
-        .info {
-            color: #17a2b8;
-        }
-        
-        .footer {
-            background: #f8f9fa;
-            padding: 20px;
-            text-align: center;
-            color: #666;
-            font-size: 0.9em;
-            margin-top: 40px;
-            border-top: 1px solid #eee;
-        }
-        
         .loading {
             display: inline-block;
             width: 20px;
@@ -305,17 +404,118 @@
             border-top-color: #fff;
             animation: spin 1s ease-in-out infinite;
         }
-        
+        .hidden {
+            display: none;
+        }
+        /* 确保加载动画在隐藏时不显示 */
+        .loading.hidden {
+            display: none;
+        }
+        .success {
+            color: var(--success);
+        }
+        .error {
+            color: var(--danger);
+        }
+        .info {
+            color: var(--info);
+        }
         @keyframes spin {
             to { transform: rotate(360deg); }
+        }
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
+        }
+        .particle {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            animation: float 15s infinite linear;
+        }
+        @keyframes float {
+            0% { transform: translateY(0) rotate(0deg); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(-1000px) rotate(720deg); opacity: 0; }
+        }
+        .footer {
+            margin-top: 40px;
+            padding-top: 25px;
+            border-top: 2px solid #eee;
+            font-size: 15px;
+            color: var(--gray);
+            text-align: center;
+        }
+        .footer-content {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .footer-info {
+            display: flex;
+            justify-content: center;
+            gap: 25px;
+            flex-wrap: wrap;
+        }
+        .footer-info div {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 15px;
+            background: rgba(108, 117, 125, 0.08);
+            border-radius: 20px;
+            transition: var(--transition);
+        }
+        .footer-info div:hover {
+            background: rgba(108, 117, 125, 0.15);
+            transform: translateY(-2px);
+        }
+        .footer a {
+            color: var(--primary);
+            text-decoration: none;
+            transition: var(--transition);
+            font-weight: 600;
+        }
+        .footer a:hover {
+            color: var(--secondary);
+            text-decoration: underline;
+        }
+        @media (max-width: 768px) {
+            .container {
+                padding: 25px;
+            }
+            .header h1 {
+                font-size: 30px;
+            }
+            .upload-section {
+                flex-direction: column;
+            }
+            .upload-group {
+                min-width: 100%;
+            }
+            .btn {
+                padding: 16px 35px;
+                font-size: 16px;
+            }
+            .footer-info {
+                flex-direction: column;
+                gap: 12px;
+            }
         }
     </style>
 </head>
 <body>
+    <div class="particles" id="particles"></div>
     <div class="container">
         <div class="header">
-            <h1>Excel文件比较工具</h1>
-            <p>轻松比较两个Excel文件的差异，生成可视化的比较结果</p>
+            <h1><i class="fas fa-file-excel"></i>销售毛利分析表比较工具</h1>
+            <p>轻松比较两个销售毛利分析表文件的差异，生成可视化的比较结果</p>
         </div>
         
         <div class="content">
@@ -324,23 +524,27 @@
                 <form id="compareForm" enctype="multipart/form-data">
                     <div class="upload-section">
                         <div class="upload-group">
-                            <label for="baselineFile">基准文件</label>
-                            <div class="file-upload">
+                            <div class="file-upload-area">
                                 <input type="file" id="baselineFile" name="baselineFile" class="file-input" accept=".xlsx" required>
-                                <button type="button" class="file-upload-button">
-                                    <span id="baselineBtnText">选择基准文件</span>
-                                </button>
+                                <div class="upload-content">
+                                    <i class="fas fa-cloud-upload-alt upload-icon"></i>
+                                    <div class="upload-title">基准文件</div>
+                                    <div class="upload-desc">支持拖拽上传</div>
+                                    <div class="upload-format">当前仅支持xlsx格式</div>
+                                </div>
                             </div>
                             <div id="baselineInfo" class="file-info hidden"></div>
                         </div>
                         
                         <div class="upload-group">
-                            <label for="compareFile">比较文件</label>
-                            <div class="file-upload">
+                            <div class="file-upload-area">
                                 <input type="file" id="compareFile" name="compareFile" class="file-input" accept=".xlsx" required>
-                                <button type="button" class="file-upload-button">
-                                    <span id="compareBtnText">选择比较文件</span>
-                                </button>
+                                <div class="upload-content">
+                                    <i class="fas fa-cloud-upload-alt upload-icon"></i>
+                                    <div class="upload-title">比较文件</div>
+                                    <div class="upload-desc">支持拖拽上传</div>
+                                    <div class="upload-format">当前仅支持xlsx格式</div>
+                                </div>
                             </div>
                             <div id="compareInfo" class="file-info hidden"></div>
                         </div>
@@ -348,6 +552,7 @@
                     
                     <div class="execute-section">
                         <button type="submit" id="executeBtn" class="btn btn-primary">
+                            <i class="fas fa-play"></i>
                             <span id="btnText">开始比较</span>
                             <span id="loadingSpinner" class="loading hidden"></span>
                         </button>
@@ -362,7 +567,7 @@
             <div class="section">
                 <h2>执行状态</h2>
                 <div class="status-section">
-                    <pre id="status">准备就绪...</pre>
+                    <div id="status"></div>
                 </div>
             </div>
             
@@ -373,11 +578,52 @@
         </div>
         
         <div class="footer">
-            <p>Excel文件比较工具 © 2026</p>
+            <div class="footer-content">
+                <div class="footer-info">
+                    <div><i class="fas fa-user"></i> 作者：Tobin</div>
+                    <div><i class="fas fa-code-branch"></i> 版本：V0.1.0</div>
+                    <div><i class="fas fa-calendar"></i> 更新日期：2026年01月</div>
+                </div>
+                <div class="footer-info">
+                    <div><i class="fab fa-github"></i> GitHub：<a href="https://github.com/caifugao110/table-comparison-hyl" target="_blank">https://github.com/caifugao110/table-comparison-hyl</a></div>
+                </div>
+                <div class="footer-info">
+                    <div><i class="fas fa-info-circle"></i> 功能说明：本工具用于比较两个销售毛利分析表文件，自动标记差异内容，包括数值变化、新增行和删除行。</div>
+                </div>
+            </div>
         </div>
     </div>
     
     <script>
+        // 创建粒子背景
+        function createParticles() {
+            try {
+                const particlesContainer = document.getElementById('particles');
+                if (!particlesContainer) return;
+                
+                const particleCount = 30;
+                for (let i = 0; i < particleCount; i++) {
+                    const particle = document.createElement('div');
+                    particle.classList.add('particle');
+                    
+                    const size = Math.random() * 20 + 5;
+                    const left = Math.random() * 100;
+                    const animationDuration = Math.random() * 20 + 10;
+                    const animationDelay = Math.random() * 5;
+                    
+                    particle.style.width = `${size}px`;
+                    particle.style.height = `${size}px`;
+                    particle.style.left = `${left}%`;
+                    particle.style.animationDuration = `${animationDuration}s`;
+                    particle.style.animationDelay = `${animationDelay}s`;
+                    
+                    particlesContainer.appendChild(particle);
+                }
+            } catch (e) {
+                console.error('粒子背景创建失败:', e);
+            }
+        }
+        
         const compareForm = document.getElementById('compareForm');
         const baselineFile = document.getElementById('baselineFile');
         const compareFile = document.getElementById('compareFile');
@@ -448,7 +694,7 @@
             openBtn.className = 'btn btn-secondary';
             openBtn.href = `file://${filePath}`;
             openBtn.target = '_blank';
-            openBtn.textContent = '打开文件';
+            openBtn.innerHTML = '<i class="fas fa-folder-open"></i> 打开文件';
             
             // 组装元素
             resultInfo.appendChild(resultName);
@@ -480,7 +726,7 @@
                     // 添加加载中的视觉反馈
                     executeBtn.style.opacity = '0.9';
                 } else {
-                    btnText.textContent = '开始比较';
+                    btnText.innerHTML = '<i class="fas fa-play"></i> 开始比较';
                     loadingSpinner.classList.add('hidden');
                     executeBtn.disabled = false;
                     // 恢复正常状态
@@ -489,26 +735,92 @@
             });
         }
         
-        // 监听文件选择
-        baselineFile.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                baselineBtnText.textContent = `已选择: ${file.name}`;
-                baselineInfo.textContent = file.path;
-                baselineInfo.classList.remove('hidden');
-                updateStatus(`已选择基准文件：${file.name}`, 'info');
-            }
-        });
+        // 文件选择处理函数
+        function handleFileSelect(input, infoDiv, type) {
+            return function(e) {
+                let file;
+                if (e.type === 'change') {
+                    // 传统文件选择
+                    file = e.target.files[0];
+                } else {
+                    // 拖拽文件上传
+                    e.preventDefault();
+                    e.stopPropagation();
+                    file = e.dataTransfer.files[0];
+                    // 将文件设置到对应的 input 元素中
+                    input.files = e.dataTransfer.files;
+                }
+                
+                if (file) {
+                    // 获取上传区域元素
+                    const uploadArea = input.closest('.file-upload-area');
+                    // 更新上传区域样式
+                    uploadArea.classList.add('file-selected');
+                    // 更新上传标题
+                    const uploadTitle = uploadArea.querySelector('.upload-title');
+                    uploadTitle.textContent = `已选择: ${file.name}`;
+                    // 更新文件信息
+                    infoDiv.textContent = file.path;
+                    infoDiv.classList.remove('hidden');
+                    updateStatus(`已选择${type === 'baseline' ? '基准' : '比较'}文件：${file.name}`, 'info');
+                }
+            };
+        }
         
-        compareFile.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                compareBtnText.textContent = `已选择: ${file.name}`;
-                compareInfo.textContent = file.path;
-                compareInfo.classList.remove('hidden');
-                updateStatus(`已选择比较文件：${file.name}`, 'info');
-            }
-        });
+        // 拖拽事件处理函数
+        function handleDragEvent(input, infoDiv, type) {
+            const uploadGroup = input.closest('.upload-group');
+            
+            return {
+                dragenter: function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    uploadGroup.classList.add('drag-over');
+                },
+                dragover: function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    uploadGroup.classList.add('drag-over');
+                },
+                dragleave: function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    uploadGroup.classList.remove('drag-over');
+                },
+                drop: function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    uploadGroup.classList.remove('drag-over');
+                    handleFileSelect(input, infoDiv, type)(e);
+                }
+            };
+        }
+        
+        // 基准文件事件处理
+        const baselineEvents = handleDragEvent(baselineFile, baselineInfo, 'baseline');
+        
+        // 为基准文件上传组添加拖拽事件
+        const baselineGroup = baselineFile.closest('.upload-group');
+        baselineGroup.addEventListener('dragenter', baselineEvents.dragenter);
+        baselineGroup.addEventListener('dragover', baselineEvents.dragover);
+        baselineGroup.addEventListener('dragleave', baselineEvents.dragleave);
+        baselineGroup.addEventListener('drop', baselineEvents.drop);
+        
+        // 基准文件传统选择事件
+        baselineFile.addEventListener('change', handleFileSelect(baselineFile, baselineInfo, 'baseline'));
+        
+        // 比较文件事件处理
+        const compareEvents = handleDragEvent(compareFile, compareInfo, 'compare');
+        
+        // 为比较文件上传组添加拖拽事件
+        const compareGroup = compareFile.closest('.upload-group');
+        compareGroup.addEventListener('dragenter', compareEvents.dragenter);
+        compareGroup.addEventListener('dragover', compareEvents.dragover);
+        compareGroup.addEventListener('dragleave', compareEvents.dragleave);
+        compareGroup.addEventListener('drop', compareEvents.drop);
+        
+        // 比较文件传统选择事件
+        compareFile.addEventListener('change', handleFileSelect(compareFile, compareInfo, 'compare'));
         
         // 表单提交处理
         compareForm.addEventListener('submit', async (e) => {
@@ -526,20 +838,23 @@
             }, 300);
             
             clearResults();
-            updateStatus('开始比较文件...');
             updateProgress(0);
             showLoading(true);
             
             try {
+                // 发送请求
+                updateStatus('正在上传文件...');
+                updateProgress(5);
+                
                 // 创建FormData - 优化点：提前准备数据
                 updateStatus('正在准备文件数据...');
-                updateProgress(5);
+                updateProgress(15);
                 
                 const formData = new FormData(compareForm);
                 
-                // 发送请求
-                updateStatus('正在上传文件...');
-                updateProgress(15);
+                // 开始比较文件
+                updateStatus('开始比较文件...');
+                updateProgress(25);
                 
                 // 优化点：添加超时控制
                 const controller = new AbortController();
@@ -621,7 +936,13 @@
         });
         
         // 初始化
+        createParticles();
         updateStatus('准备就绪...');
+        
+        // 确保初始状态正确显示
+        requestAnimationFrame(() => {
+            status.scrollTop = status.scrollHeight;
+        });
     </script>
 </body>
 </html>

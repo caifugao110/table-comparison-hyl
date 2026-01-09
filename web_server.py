@@ -72,7 +72,7 @@ PORT = 8000
 PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 
 # 核心Python脚本路径
-CORE_SCRIPT = os.path.join(PROJECT_ROOT, "compare_excel_销售毛利分析表.py")
+CORE_SCRIPT = os.path.join(PROJECT_ROOT, "compare_excel_web.py")
 
 # 创建results文件夹（如果不存在）
 RESULTS_FOLDER = os.path.join(PROJECT_ROOT, "results")
@@ -87,26 +87,17 @@ class RequestHandler(http.server.SimpleHTTPRequestHandler):
         if parsed_path.path == '/':
             self.path = '/index.html'
         
-        # 设置响应头
-        self.send_response(200)
-        
-        # 设置CORS头
+        # 调用父类的do_GET处理静态文件
+        super().do_GET()
+    
+    def end_headers(self):
+        # 添加CORS头
         self.send_header('Access-Control-Allow-Origin', '*')
         self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
         self.send_header('Access-Control-Allow-Headers', 'Content-Type')
         
-        # 设置正确的Content-Type，确保HTML文件使用UTF-8编码
-        if self.path.endswith('.html'):
-            self.send_header('Content-Type', 'text/html; charset=utf-8')
-        elif self.path.endswith('.css'):
-            self.send_header('Content-Type', 'text/css; charset=utf-8')
-        elif self.path.endswith('.js'):
-            self.send_header('Content-Type', 'application/javascript; charset=utf-8')
-        
-        self.end_headers()
-        
-        # 调用父类的do_GET处理静态文件
-        super().do_GET()
+        # 调用父类的end_headers
+        super().end_headers()
     
     def do_POST(self):
         # 处理POST请求
@@ -168,11 +159,20 @@ class RequestHandler(http.server.SimpleHTTPRequestHandler):
             shutil.copy2(baseline_file_path, temp_baseline)
             shutil.copy2(compare_file_path, temp_compare)
             
+            # 生成结果文件路径
+            result_baseline = os.path.join(RESULTS_FOLDER, f"{original_filename}_my_比较结果_{timestamp}.xlsx")
+            result_compare = os.path.join(RESULTS_FOLDER, f"{original_filename}_from_比较结果_{timestamp}.xlsx")
+            
             # 优化：使用python -u禁用输出缓冲，更快获取脚本输出
             command = [
                 'python',
                 '-u',  # 禁用输出缓冲
-                CORE_SCRIPT
+                CORE_SCRIPT,
+                temp_baseline,  # 基准文件路径
+                temp_compare,  # 比较文件路径
+                result_baseline,  # 输出基准文件路径
+                result_compare,  # 输出比较文件路径
+                original_filename  # 原始文件名
             ]
             
             print(f"执行Python命令: {' '.join(command)}")
@@ -188,30 +188,21 @@ class RequestHandler(http.server.SimpleHTTPRequestHandler):
                 universal_newlines=True  # 与text=True功能相同，但明确指定
             )
             
-            # 优化：直接根据已知的文件名格式生成结果文件路径，避免遍历目录
-            original_filename = os.path.basename(baseline_file_path).replace('.xlsx', '')
+            # 优化：直接使用已知的结果文件路径，避免遍历目录
             result_files = []
             
             # 直接生成预期的结果文件路径
+            diff_file = os.path.join(RESULTS_FOLDER, f"{original_filename}_差异结果_{timestamp}.xlsx")
             expected_files = [
-                f"{original_filename}_差异结果_{timestamp}.xlsx",
-                f"{original_filename}_my_比较结果_{timestamp}.xlsx",
-                f"{original_filename}_from_比较结果_{timestamp}.xlsx"
+                diff_file,
+                result_baseline,
+                result_compare
             ]
             
             # 检查文件是否存在
             for expected_file in expected_files:
-                file_path = os.path.join(RESULTS_FOLDER, expected_file)
-                if os.path.exists(file_path):
-                    result_files.append(file_path)
-            
-            # 如果直接生成的文件路径没有找到，再使用遍历方式兜底
-            if not result_files and os.path.exists(RESULTS_FOLDER):
-                for f in os.listdir(RESULTS_FOLDER):
-                    if f.endswith('.xlsx') and timestamp in f:
-                        result_files.append(os.path.join(RESULTS_FOLDER, f))
-                        if '差异结果' in f:
-                            result_files = [result_files[-1]] + result_files[:-1]
+                if os.path.exists(expected_file):
+                    result_files.append(expected_file)
             
             # 构造响应
             response = {
