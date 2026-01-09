@@ -167,6 +167,23 @@
             transform: none;
         }
         
+        /* 点击动画效果 */
+        .btn-clicked {
+            animation: btnClick 0.3s ease-out;
+        }
+        
+        @keyframes btnClick {
+            0% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(0.95);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+        
         .progress-bar {
             width: 100%;
             height: 8px;
@@ -502,6 +519,12 @@
                 return;
             }
             
+            // 添加按钮点击动画
+            executeBtn.classList.add('btn-clicked');
+            setTimeout(() => {
+                executeBtn.classList.remove('btn-clicked');
+            }, 300);
+            
             clearResults();
             updateStatus('开始比较文件...');
             updateProgress(0);
@@ -554,8 +577,10 @@
                     // 显示结果
                     resultsSection.classList.remove('hidden');
                     if (result.resultFiles.length > 0) {
-                        // 只显示第一个结果文件
-                        addResultItem(result.resultFiles[0]);
+                        // 显示所有结果文件
+                        result.resultFiles.forEach(filePath => {
+                            addResultItem(filePath);
+                        });
                     }
                     
                     // 显示Python脚本输出 - 优化点：限制输出行数，避免DOM过度渲染

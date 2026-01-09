@@ -12,8 +12,10 @@ import shutil
 from urllib.parse import urlparse, parse_qs
 
 # 替代cgi模块的简单multipart解析器
+
 def parse_multipart(fp, boundary):
-    """简单的multipart/form-data解析器，恢复为一次性读取，更适合小文件"""
+    """优化的multipart/form-data解析器，使用更高效的方式处理文件"""
+    # 移除seek操作，因为HTTP请求流是不可寻址的
     data = fp.read()
     boundary = boundary.encode()
     parts = data.split(b'--' + boundary)
@@ -186,16 +188,29 @@ class RequestHandler(http.server.SimpleHTTPRequestHandler):
                 universal_newlines=True  # 与text=True功能相同，但明确指定
             )
             
-            # 修复：使用更可靠的方式查找结果文件，遍历目录但只查找当前时间戳的文件
+            # 优化：直接根据已知的文件名格式生成结果文件路径，避免遍历目录
+            original_filename = os.path.basename(baseline_file_path).replace('.xlsx', '')
             result_files = []
-            if os.path.exists(RESULTS_FOLDER):
-                # 遍历目录查找包含当前时间戳的Excel文件
+            
+            # 直接生成预期的结果文件路径
+            expected_files = [
+                f"{original_filename}_差异结果_{timestamp}.xlsx",
+                f"{original_filename}_my_比较结果_{timestamp}.xlsx",
+                f"{original_filename}_from_比较结果_{timestamp}.xlsx"
+            ]
+            
+            # 检查文件是否存在
+            for expected_file in expected_files:
+                file_path = os.path.join(RESULTS_FOLDER, expected_file)
+                if os.path.exists(file_path):
+                    result_files.append(file_path)
+            
+            # 如果直接生成的文件路径没有找到，再使用遍历方式兜底
+            if not result_files and os.path.exists(RESULTS_FOLDER):
                 for f in os.listdir(RESULTS_FOLDER):
                     if f.endswith('.xlsx') and timestamp in f:
                         result_files.append(os.path.join(RESULTS_FOLDER, f))
-                        # 优先返回差异结果文件
                         if '差异结果' in f:
-                            # 将差异结果文件移到列表首位
                             result_files = [result_files[-1]] + result_files[:-1]
             
             # 构造响应
