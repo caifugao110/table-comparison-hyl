@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="zh-CN" charset="UTF-8">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Excel比较工具</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 40px;
+        }
+        
+        .section {
+            margin-bottom: 30px;
+        }
+        
+        .section h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            border-bottom: 2px solid #4facfe;
+            padding-bottom: 10px;
+        }
+        
+        .upload-section {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .upload-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .upload-group label {
+            font-weight: bold;
+            color: #555;
+            font-size: 1.1em;
+        }
+        
+        .file-upload {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+        }
+        
+        .file-input {
+            opacity: 0;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+        
+        .file-upload-button {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            justify-content: center;
+        }
+        
+        .file-upload-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(250, 112, 154, 0.4);
+        }
+        
+        .file-info {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            color: #666;
+            word-break: break-all;
+        }
+        
+        .execute-section {
+            display: flex;
+            justify-content: center;
+            margin: 40px 0;
+        }
+        
+        .btn {
+            padding: 15px 40px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.2em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(79, 172, 254, 0.4);
+        }
+        
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #ddd;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%);
+            width: 0%;
+            transition: width 0.3s ease;
+            border-radius: 4px;
+        }
+        
+        .status-section {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+            border-left: 5px solid #4facfe;
+        }
+        
+        #status {
+            font-family: 'Courier New', monospace;
+            font-size: 1em;
+            line-height: 1.6;
+            color: #333;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .results-section {
+            margin-top: 40px;
+        }
+        
+        .results-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            transition: transform 0.2s ease;
+        }
+        
+        .result-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .result-info {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .result-name {
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .result-path {
+            font-size: 0.9em;
+            color: #666;
+            font-family: 'Courier New', monospace;
+            word-break: break-all;
+        }
+        
+        .btn-secondary {
+            padding: 8px 16px;
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+            color: white;
+            font-size: 0.9em;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .success {
+            color: #28a745;
+        }
+        
+        .error {
+            color: #dc3545;
+        }
+        
+        .info {
+            color: #17a2b8;
+        }
+        
+        .footer {
+            background: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            color: #666;
+            font-size: 0.9em;
+            margin-top: 40px;
+            border-top: 1px solid #eee;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Excel文件比较工具</h1>
+            <p>轻松比较两个Excel文件的差异，生成可视化的比较结果</p>
+        </div>
+        
+        <div class="content">
+            <div class="section">
+                <h2>选择文件</h2>
+                <form id="compareForm" enctype="multipart/form-data">
+                    <div class="upload-section">
+                        <div class="upload-group">
+                            <label for="baselineFile">基准文件</label>
+                            <div class="file-upload">
+                                <input type="file" id="baselineFile" name="baselineFile" class="file-input" accept=".xlsx" required>
+                                <button type="button" class="file-upload-button">
+                                    <span id="baselineBtnText">选择基准文件</span>
+                                </button>
+                            </div>
+                            <div id="baselineInfo" class="file-info hidden"></div>
+                        </div>
+                        
+                        <div class="upload-group">
+                            <label for="compareFile">比较文件</label>
+                            <div class="file-upload">
+                                <input type="file" id="compareFile" name="compareFile" class="file-input" accept=".xlsx" required>
+                                <button type="button" class="file-upload-button">
+                                    <span id="compareBtnText">选择比较文件</span>
+                                </button>
+                            </div>
+                            <div id="compareInfo" class="file-info hidden"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="execute-section">
+                        <button type="submit" id="executeBtn" class="btn btn-primary">
+                            <span id="btnText">开始比较</span>
+                            <span id="loadingSpinner" class="loading hidden"></span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+            
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            
+            <div class="section">
+                <h2>执行状态</h2>
+                <div class="status-section">
+                    <pre id="status">准备就绪...</pre>
+                </div>
+            </div>
+            
+            <div class="section results-section hidden" id="resultsSection">
+                <h2>比较结果</h2>
+                <div class="results-list" id="resultsList"></div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>Excel文件比较工具 © 2026</p>
+        </div>
+    </div>
+    
+    <script>
+        const compareForm = document.getElementById('compareForm');
+        const baselineFile = document.getElementById('baselineFile');
+        const compareFile = document.getElementById('compareFile');
+        const baselineBtnText = document.getElementById('baselineBtnText');
+        const compareBtnText = document.getElementById('compareBtnText');
+        const baselineInfo = document.getElementById('baselineInfo');
+        const compareInfo = document.getElementById('compareInfo');
+        const executeBtn = document.getElementById('executeBtn');
+        const btnText = document.getElementById('btnText');
+        const loadingSpinner = document.getElementById('loadingSpinner');
+        const status = document.getElementById('status');
+        const progressFill = document.getElementById('progressFill');
+        const resultsSection = document.getElementById('resultsSection');
+        const resultsList = document.getElementById('resultsList');
+        
+        // 优化状态更新，减少DOM重绘
+        function updateStatus(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const typeClass = {
+                info: 'info',
+                success: 'success',
+                error: 'error'
+            }[type];
+            
+            // 创建新的状态行元素
+            const statusLine = document.createElement('div');
+            statusLine.innerHTML = `[${timestamp}] <span class="${typeClass}">${message}</span>`;
+            
+            // 追加到状态容器
+            status.appendChild(statusLine);
+            status.appendChild(document.createElement('br'));
+            
+            // 滚动到底部
+            status.scrollTop = status.scrollHeight;
+        }
+        
+        // 使用requestAnimationFrame优化DOM更新
+        function updateProgress(percent) {
+            requestAnimationFrame(() => {
+                progressFill.style.width = `${percent}%`;
+            });
+        }
+        
+        // 优化DOM操作，减少重排重绘
+        function addResultItem(filePath) {
+            const fileName = filePath.split('\\').pop();
+            
+            // 使用document.createElement替代innerHTML，减少重绘
+            const resultItem = document.createElement('div');
+            resultItem.className = 'result-item';
+            
+            // 创建result-info容器
+            const resultInfo = document.createElement('div');
+            resultInfo.className = 'result-info';
+            
+            // 创建result-name
+            const resultName = document.createElement('div');
+            resultName.className = 'result-name';
+            resultName.textContent = fileName;
+            
+            // 创建result-path
+            const resultPath = document.createElement('div');
+            resultPath.className = 'result-path';
+            resultPath.textContent = filePath;
+            
+            // 创建打开按钮
+            const openBtn = document.createElement('a');
+            openBtn.className = 'btn btn-secondary';
+            openBtn.href = `file://${filePath}`;
+            openBtn.target = '_blank';
+            openBtn.textContent = '打开文件';
+            
+            // 组装元素
+            resultInfo.appendChild(resultName);
+            resultInfo.appendChild(resultPath);
+            resultItem.appendChild(resultInfo);
+            resultItem.appendChild(openBtn);
+            
+            // 使用requestAnimationFrame优化添加元素
+            requestAnimationFrame(() => {
+                resultsList.appendChild(resultItem);
+            });
+        }
+        
+        // 优化结果清除操作
+        function clearResults() {
+            requestAnimationFrame(() => {
+                resultsList.innerHTML = '';
+                resultsSection.classList.add('hidden');
+            });
+        }
+        
+        // 优化加载状态显示
+        function showLoading(show) {
+            requestAnimationFrame(() => {
+                if (show) {
+                    btnText.textContent = '比较中...';
+                    loadingSpinner.classList.remove('hidden');
+                    executeBtn.disabled = true;
+                    // 添加加载中的视觉反馈
+                    executeBtn.style.opacity = '0.9';
+                } else {
+                    btnText.textContent = '开始比较';
+                    loadingSpinner.classList.add('hidden');
+                    executeBtn.disabled = false;
+                    // 恢复正常状态
+                    executeBtn.style.opacity = '1';
+                }
+            });
+        }
+        
+        // 监听文件选择
+        baselineFile.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                baselineBtnText.textContent = `已选择: ${file.name}`;
+                baselineInfo.textContent = file.path;
+                baselineInfo.classList.remove('hidden');
+                updateStatus(`已选择基准文件：${file.name}`, 'info');
+            }
+        });
+        
+        compareFile.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                compareBtnText.textContent = `已选择: ${file.name}`;
+                compareInfo.textContent = file.path;
+                compareInfo.classList.remove('hidden');
+                updateStatus(`已选择比较文件：${file.name}`, 'info');
+            }
+        });
+        
+        // 表单提交处理
+        compareForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            if (!baselineFile.files[0] || !compareFile.files[0]) {
+                updateStatus('请选择两个要比较的文件', 'error');
+                return;
+            }
+            
+            clearResults();
+            updateStatus('开始比较文件...');
+            updateProgress(0);
+            showLoading(true);
+            
+            try {
+                // 创建FormData - 优化点：提前准备数据
+                updateStatus('正在准备文件数据...');
+                updateProgress(5);
+                
+                const formData = new FormData(compareForm);
+                
+                // 发送请求
+                updateStatus('正在上传文件...');
+                updateProgress(15);
+                
+                // 优化点：添加超时控制
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 300000); // 5分钟超时
+                
+                const response = await fetch('/api/compare', {
+                    method: 'POST',
+                    body: formData,
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutId);
+                updateProgress(40);
+                
+                if (!response.ok) {
+                    updateStatus('服务器返回错误，正在处理...', 'info');
+                    updateProgress(45);
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.error || `HTTP错误: ${response.status}`);
+                }
+                
+                updateStatus('正在解析服务器响应...');
+                updateProgress(55);
+                
+                const result = await response.json();
+                updateProgress(70);
+                
+                if (result.success) {
+                    updateStatus('正在处理比较结果...');
+                    updateProgress(85);
+                    
+                    updateStatus('比较完成！', 'success');
+                    updateStatus(`生成了 ${result.resultFiles.length} 个结果文件`, 'success');
+                    
+                    // 显示结果
+                    resultsSection.classList.remove('hidden');
+                    if (result.resultFiles.length > 0) {
+                        // 只显示第一个结果文件
+                        addResultItem(result.resultFiles[0]);
+                    }
+                    
+                    // 显示Python脚本输出 - 优化点：限制输出行数，避免DOM过度渲染
+                    if (result.stdout) {
+                        updateStatus('Python脚本输出:', 'info');
+                        const lines = result.stdout.split('\n').filter(line => line.trim());
+                        // 最多显示50行输出
+                        const displayLines = lines.slice(0, 50);
+                        displayLines.forEach(line => {
+                            updateStatus(line, 'info');
+                        });
+                        if (lines.length > 50) {
+                            updateStatus(`... 省略了 ${lines.length - 50} 行输出`, 'info');
+                        }
+                    }
+                } else {
+                    updateStatus(`比较失败：${result.error}`, 'error');
+                    if (result.stderr) {
+                        updateStatus('错误详情:', 'error');
+                        const lines = result.stderr.split('\n').filter(line => line.trim());
+                        // 最多显示50行错误信息
+                        const displayLines = lines.slice(0, 50);
+                        displayLines.forEach(line => {
+                            updateStatus(line, 'error');
+                        });
+                        if (lines.length > 50) {
+                            updateStatus(`... 省略了 ${lines.length - 50} 行错误信息`, 'error');
+                        }
+                    }
+                }
+            } catch (error) {
+                updateStatus(`比较失败：${error.message}`, 'error');
+                console.error('比较错误:', error);
+            } finally {
+                updateProgress(100);
+                showLoading(false);
+            }
+        });
+        
+        // 初始化
+        updateStatus('准备就绪...');
+    </script>
+</body>
+</html>

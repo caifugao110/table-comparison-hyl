@@ -3,3 +3,6 @@ from/*
 my/*
 results/*
 !.gitkeep
+
+# Ignore Python cache files
+__pycache__/
