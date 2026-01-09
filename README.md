@@ -15,6 +15,12 @@
 - **subprocess**: 用于执行系统命令（设置文件只读属性、打开文件） 💻
 - **stat**: 用于文件权限处理 🔒
 - **datetime**: 用于生成时间戳，避免结果文件覆盖 ⏰
+- **tempfile**: 用于创建临时文件和目录（Web服务器使用） 📁
+- **shutil**: 用于文件复制和目录操作（Web服务器使用） 📁
+- **http.server**: 用于创建Web服务器（Web界面使用） 🖥️
+- **socketserver**: 用于创建TCP服务器（Web界面使用） 🖥️
+- **json**: 用于处理JSON数据（Web界面使用） 📄
+- **urllib.parse**: 用于解析URL和查询参数（Web界面使用） 🔗
 
 ## 🎨 颜色标记逻辑
 
