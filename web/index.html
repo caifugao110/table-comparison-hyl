@@ -252,6 +252,11 @@
             color: white;
             box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
         }
+        .btn-success {
+            background: linear-gradient(45deg, var(--success), #20c997);
+            color: white;
+            box-shadow: 0 8px 20px rgba(40, 167, 69, 0.4);
+        }
         .btn-primary:hover:not(:disabled) {
             transform: translateY(-5px);
             box-shadow: 0 12px 25px rgba(102, 126, 234, 0.5);
@@ -627,8 +632,6 @@
         const compareForm = document.getElementById('compareForm');
         const baselineFile = document.getElementById('baselineFile');
         const compareFile = document.getElementById('compareFile');
-        const baselineBtnText = document.getElementById('baselineBtnText');
-        const compareBtnText = document.getElementById('compareBtnText');
         const baselineInfo = document.getElementById('baselineInfo');
         const compareInfo = document.getElementById('compareInfo');
         const executeBtn = document.getElementById('executeBtn');
@@ -692,7 +695,10 @@
             // 创建打开按钮
             const openBtn = document.createElement('a');
             openBtn.className = 'btn btn-secondary';
-            openBtn.href = `file://${filePath}`;
+            // 从完整路径中提取文件名
+            const fileNameOnly = filePath.split('\\').pop();
+            // 使用API端点下载文件
+            openBtn.href = `/api/download/${encodeURIComponent(fileNameOnly)}`;
             openBtn.target = '_blank';
             openBtn.innerHTML = '<i class="fas fa-folder-open"></i> 打开文件';
             
@@ -723,15 +729,43 @@
                     btnText.textContent = '比较中...';
                     loadingSpinner.classList.remove('hidden');
                     executeBtn.disabled = true;
+                    executeBtn.classList.remove('btn-success');
+                    executeBtn.classList.add('btn-primary');
                     // 添加加载中的视觉反馈
                     executeBtn.style.opacity = '0.9';
                 } else {
-                    btnText.innerHTML = '<i class="fas fa-play"></i> 开始比较';
+                    // 只修改文字，不添加额外图标
+                    btnText.textContent = '开始比较';
+                    // 更新按钮图标
+                    const btnIcon = executeBtn.querySelector('i');
+                    if (btnIcon) {
+                        btnIcon.className = 'fas fa-play';
+                    }
                     loadingSpinner.classList.add('hidden');
                     executeBtn.disabled = false;
+                    executeBtn.classList.remove('btn-success');
+                    executeBtn.classList.add('btn-primary');
                     // 恢复正常状态
                     executeBtn.style.opacity = '1';
                 }
+            });
+        }
+        
+        // 显示比较完成状态
+        function showCompleted() {
+            requestAnimationFrame(() => {
+                // 只修改文字，不添加额外图标
+                btnText.textContent = '比较完成';
+                // 更新按钮图标
+                const btnIcon = executeBtn.querySelector('i');
+                if (btnIcon) {
+                    btnIcon.className = 'fas fa-check';
+                }
+                loadingSpinner.classList.add('hidden');
+                executeBtn.disabled = true;
+                executeBtn.classList.remove('btn-primary');
+                executeBtn.classList.add('btn-success');
+                executeBtn.style.opacity = '1';
             });
         }
         
@@ -854,12 +888,15 @@
                 
                 // 开始比较文件
                 updateStatus('开始比较文件...');
-                updateProgress(25);
-                
-                // 优化点：添加超时控制
+            
+                // 使用流式请求处理，获取实时进度
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), 300000); // 5分钟超时
-                
+            
+                // 添加实时进度更新
+                updateStatus('正在上传并处理文件...');
+                updateProgress(25);
+            
                 const response = await fetch('/api/compare', {
                     method: 'POST',
                     body: formData,
@@ -867,27 +904,23 @@
                 });
                 
                 clearTimeout(timeoutId);
-                updateProgress(40);
+                updateProgress(50);
                 
                 if (!response.ok) {
                     updateStatus('服务器返回错误，正在处理...', 'info');
-                    updateProgress(45);
+                    updateProgress(60);
                     const errorData = await response.json().catch(() => ({}));
                     throw new Error(errorData.error || `HTTP错误: ${response.status}`);
                 }
                 
-                updateStatus('正在解析服务器响应...');
-                updateProgress(55);
-                
-                const result = await response.json();
+                updateStatus('正在解析比较结果...');
                 updateProgress(70);
                 
+                const result = await response.json();
+                updateProgress(90);
+                
                 if (result.success) {
-                    updateStatus('正在处理比较结果...');
-                    updateProgress(85);
-                    
-                    updateStatus('比较完成！', 'success');
-                    updateStatus(`生成了 ${result.resultFiles.length} 个结果文件`, 'success');
+                    updateProgress(100);
                     
                     // 显示结果
                     resultsSection.classList.remove('hidden');
@@ -898,19 +931,31 @@
                         });
                     }
                     
-                    // 显示Python脚本输出 - 优化点：限制输出行数，避免DOM过度渲染
+                    // 显示Python脚本输出 - 显示差异统计信息
                     if (result.stdout) {
-                        updateStatus('Python脚本输出:', 'info');
                         const lines = result.stdout.split('\n').filter(line => line.trim());
-                        // 最多显示50行输出
-                        const displayLines = lines.slice(0, 50);
-                        displayLines.forEach(line => {
-                            updateStatus(line, 'info');
+                        
+                        // 显示所有差异统计相关的行
+                        const statsLines = lines.filter(line => 
+                            line.includes('比较完成！共发现') ||
+                            line.includes('已标记') ||
+                            line.includes('行删除') ||
+                            line.includes('行新增') ||
+                            line.includes('数值变化')
+                        );
+                        
+                        // 显示统计信息
+                        statsLines.forEach(line => {
+                            if (line.includes('比较完成！共发现')) {
+                                updateStatus(line, 'success');
+                            } else {
+                                updateStatus(line, 'info');
+                            }
                         });
-                        if (lines.length > 50) {
-                            updateStatus(`... 省略了 ${lines.length - 50} 行输出`, 'info');
-                        }
                     }
+                    
+                    // 比较成功，显示完成状态
+                    showCompleted();
                 } else {
                     updateStatus(`比较失败：${result.error}`, 'error');
                     if (result.stderr) {
@@ -925,14 +970,16 @@
                             updateStatus(`... 省略了 ${lines.length - 50} 行错误信息`, 'error');
                         }
                     }
+                    
+                    // 比较失败，恢复正常状态
+                    showLoading(false);
                 }
-            } catch (error) {
-                updateStatus(`比较失败：${error.message}`, 'error');
-                console.error('比较错误:', error);
-            } finally {
-                updateProgress(100);
-                showLoading(false);
-            }
+        } catch (error) {
+            updateStatus(`比较失败：${error.message}`, 'error');
+            console.error('比较错误:', error);
+            // 比较失败，恢复正常状态
+            showLoading(false);
+        }
         });
         
         // 初始化

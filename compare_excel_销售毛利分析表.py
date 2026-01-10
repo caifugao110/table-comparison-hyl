@@ -485,8 +485,8 @@ def compare_excel_files(baseline_path, compare_path, output_baseline_path, outpu
         print(f"设置只读属性时出错: {e}")
     
     print(f"\n比较完成！共发现 {changes_count} 处差异。")
-    print(f"已生成带颜色标记的文件至: {output_baseline_path} ({baseline_folder}文件夹)")
-    print(f"已生成带颜色标记的文件至: {output_compare_path} ({compare_folder}文件夹)")
+    print(f"已生成带颜色标记的文件至: {output_baseline_path}")
+    print(f"已生成带颜色标记的文件至: {output_compare_path}")
     print(f"已生成差异结果文件至: {diff_output_path}")
     
     # 7. 自动打开文件

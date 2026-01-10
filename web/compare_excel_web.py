@@ -57,18 +57,31 @@ def compare_excel_files(baseline_path, compare_path, output_baseline_path, outpu
 
     print(f"开始比较 ({baseline_folder}文件夹: {baseline_max_row}行 x {baseline_max_col}列, {compare_folder}文件夹: {compare_max_row}行 x {compare_max_col}列)...")
 
-    # 3. 只获取需要的单元格值，避免占用过多内存
-    # 先获取表头（第3行）用于列匹配
+    # 3. 预先获取所有单元格值到内存中，提高后续访问速度
+    cells_baseline = {}
+    cells_compare = {}
+    
+    # 获取基准文件所有单元格值
+    for r in range(1, baseline_max_row + 1):
+        for c in range(1, baseline_max_col + 1):
+            cells_baseline[(r, c)] = ws_baseline.cell(row=r, column=c).value
+    
+    # 获取比较文件所有单元格值
+    for r in range(1, compare_max_row + 1):
+        for c in range(1, compare_max_col + 1):
+            cells_compare[(r, c)] = ws_compare.cell(row=r, column=c).value
+    
+    # 获取表头（第3行）用于列匹配
     header_baseline = {}
     header_compare = {}
     
     # 获取基准文件表头
     for c in range(1, baseline_max_col + 1):
-        header_baseline[c] = ws_baseline.cell(row=3, column=c).value.strip() if ws_baseline.cell(row=3, column=c).value else ""
+        header_baseline[c] = cells_baseline[(3, c)].strip() if cells_baseline[(3, c)] else ""
     
     # 获取比较文件表头
     for c in range(1, compare_max_col + 1):
-        header_compare[c] = ws_compare.cell(row=3, column=c).value.strip() if ws_compare.cell(row=3, column=c).value else ""
+        header_compare[c] = cells_compare[(3, c)].strip() if cells_compare[(3, c)] else ""
     
     # 4. 基于关键字段的行匹配算法
     def get_col_content(col_num, cells, max_row):
@@ -101,19 +114,19 @@ def compare_excel_files(baseline_path, compare_path, output_baseline_path, outpu
     if has_all_keys_baseline and has_all_keys_compare:
         print("\n使用关键字段进行行匹配...")
         
-        # 构建行关键字映射：关键字 -> 行号，直接从工作表获取值
-        def build_row_key_map(ws, max_row, key_cols):
+        # 构建行关键字映射：关键字 -> 行号，使用内存中的cells字典
+        def build_row_key_map(cells, max_row, key_cols):
             row_key_map = {}
             for row in range(4, max_row + 1):  # 从第4行开始是数据行
-                # 直接从工作表获取关键字段值
-                key_values = tuple(ws.cell(row=row, column=key_cols[field]).value for field in KEY_FIELDS)
+                # 从内存中的cells字典获取关键字段值
+                key_values = tuple(cells[(row, key_cols[field])] for field in KEY_FIELDS)
                 # 只有当所有关键字段都有值时才进行映射
                 if all(v is not None for v in key_values):
                     row_key_map[key_values] = row
             return row_key_map
         
-        row_key_map_baseline = build_row_key_map(ws_baseline, baseline_max_row, key_cols_baseline)
-        row_key_map_compare = build_row_key_map(ws_compare, compare_max_row, key_cols_compare)
+        row_key_map_baseline = build_row_key_map(cells_baseline, baseline_max_row, key_cols_baseline)
+        row_key_map_compare = build_row_key_map(cells_compare, compare_max_row, key_cols_compare)
         
         # 建立行映射：基准行 -> 比较行
         for key in row_key_map_baseline:
@@ -130,19 +143,6 @@ def compare_excel_files(baseline_path, compare_path, output_baseline_path, outpu
         row_mapping = {r: r for r in range(1, min_rows + 1)}
         print(f"使用简单索引映射，匹配 {len(row_mapping)} 行")
     
-    # 直接基于列名创建映射，避免复杂的列内容比较
-    # 构建列名到列号的映射
-    baseline_col_name_to_num = {name: col for col, name in header_baseline.items() if name}
-    compare_col_name_to_num = {name: col for col, name in header_compare.items() if name}
-    
-    # 基于列名匹配创建列映射
-    col_name_map = {}
-    for name, col_b in baseline_col_name_to_num.items():
-        if name in compare_col_name_to_num:
-            col_name_map[col_b] = compare_col_name_to_num[name]    
-    
-    print(f"基于列名匹配到 {len(col_name_map)} 列")
-    
     # 5. 比较单元格
     changes_count = 0
     
@@ -156,15 +156,34 @@ def compare_excel_files(baseline_path, compare_path, output_baseline_path, outpu
     for row_baseline in row_mapping:
         row_compare = row_mapping[row_baseline]
         
-        # 比较匹配的列（直接使用之前创建的col_name_map）
+        # 获取当前行的所有列索引
+        baseline_cols = range(1, baseline_max_col + 1)
+        compare_cols = range(1, compare_max_col + 1)
+        
+        # 创建列映射（基于列名匹配）
+        col_name_map = {}
+        for col_b in baseline_cols:
+            # 获取基准文件列名
+            col_name_b = cells_baseline.get((3, col_b), "").strip()
+            if not col_name_b:
+                continue
+            
+            # 在比较文件中查找相同列名
+            for col_c in compare_cols:
+                col_name_c = cells_compare.get((3, col_c), "").strip()
+                if col_name_c == col_name_b:
+                    col_name_map[col_b] = col_c
+                    break
+        
+        # 比较匹配的列
         for col_baseline, col_compare in col_name_map.items():
             # 跳过关键字段列（它们已经匹配，不需要比较）
             if col_baseline in key_col_set_baseline or col_compare in key_col_set_compare:
                 continue
             
-            # 直接从工作表获取值进行比较
-            val_baseline = ws_baseline.cell(row=row_baseline, column=col_baseline).value
-            val_compare = ws_compare.cell(row=row_compare, column=col_compare).value
+            # 从内存中的cells字典获取值，提高访问速度
+            val_baseline = cells_baseline.get((row_baseline, col_baseline), None)
+            val_compare = cells_compare.get((row_compare, col_compare), None)
             
             # 只在值不同时标记为黄色（数值变化）
             if val_baseline != val_compare:
@@ -176,20 +195,20 @@ def compare_excel_files(baseline_path, compare_path, output_baseline_path, outpu
     print("\n开始标记新增行和删除行...")
     
     # 获取所有数据行的关键字映射
-    def get_all_row_keys(ws, max_row, key_cols):
+    def get_all_row_keys(cells, max_row, key_cols):
         """获取所有数据行的关键字映射"""
         all_row_keys = {}
         for row in range(4, max_row + 1):  # 从第4行开始是数据行
-            # 直接从工作表获取关键字段值
-            key_values = tuple(ws.cell(row=row, column=key_cols[field]).value for field in KEY_FIELDS)
+            # 从内存中的cells字典获取关键字段值
+            key_values = tuple(cells[(row, key_cols[field])] for field in KEY_FIELDS)
             if all(v is not None for v in key_values):
                 all_row_keys[key_values] = row
         return all_row_keys
     
     if has_all_keys_baseline and has_all_keys_compare:
         # 获取所有数据行的关键字映射
-        all_baseline_keys = get_all_row_keys(ws_baseline, baseline_max_row, key_cols_baseline)
-        all_compare_keys = get_all_row_keys(ws_compare, compare_max_row, key_cols_compare)
+        all_baseline_keys = get_all_row_keys(cells_baseline, baseline_max_row, key_cols_baseline)
+        all_compare_keys = get_all_row_keys(cells_compare, compare_max_row, key_cols_compare)
         
         # 标记删除行（基准文件中有，比较文件中没有）
         deleted_rows = 0
@@ -212,6 +231,9 @@ def compare_excel_files(baseline_path, compare_path, output_baseline_path, outpu
                 changes_count += 1
                 added_rows += 1
         print(f"已标记 {added_rows} 行新增（红色）")
+        # 计算并输出黄色标记数量（数值变化）
+        yellow_changes = changes_count - deleted_rows - added_rows
+        print(f"已标记 {yellow_changes} 处数值变化（黄色）")
     else:
         # 使用简单的行匹配来标记新增和删除行
         print("\n使用简单匹配标记新增和删除行...")
@@ -238,6 +260,9 @@ def compare_excel_files(baseline_path, compare_path, output_baseline_path, outpu
                 changes_count += 1
                 added_rows += 1
         print(f"已标记 {added_rows} 行新增（红色）")
+        # 计算并输出黄色标记数量（数值变化）
+        yellow_changes = changes_count - deleted_rows - added_rows
+        print(f"已标记 {yellow_changes} 处数值变化（黄色）")
 
     # 7. 保存my和from的比较结果文件
     print("\n正在保存结果文件...")
@@ -404,7 +429,9 @@ def compare_excel_files(baseline_path, compare_path, output_baseline_path, outpu
             ws_diff.row_dimensions[row].height = ws_baseline_saved.row_dimensions[row].height
     
     # 保存差异结果文件
-    results_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), "results")
+    # 指向项目根目录的results文件夹
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    results_folder = os.path.join(os.path.dirname(current_dir), "results")
     diff_output_path = os.path.join(results_folder, f"{original_filename}_差异结果_{timestamp}.xlsx")
     wb_diff.save(diff_output_path)
     
@@ -433,8 +460,8 @@ def compare_excel_files(baseline_path, compare_path, output_baseline_path, outpu
         print(f"设置只读属性时出错: {e}")
     
     print(f"\n比较完成！共发现 {changes_count} 处差异。")
-    print(f"已生成带颜色标记的文件至: {output_baseline_path} ({baseline_folder}文件夹)")
-    print(f"已生成带颜色标记的文件至: {output_compare_path} ({compare_folder}文件夹)")
+    print(f"已生成带颜色标记的文件至: {output_baseline_path}")
+    print(f"已生成带颜色标记的文件至: {output_compare_path}")
     print(f"已生成差异结果文件至: {diff_output_path}")
 
 
@@ -457,7 +484,8 @@ if __name__ == "__main__":
     
     # 创建results文件夹（如果不存在）
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    results_folder = os.path.join(current_dir, "results")
+    # 指向项目根目录的results文件夹
+    results_folder = os.path.join(os.path.dirname(current_dir), "results")
     os.makedirs(results_folder, exist_ok=True)
     
     compare_excel_files(baseline_path, compare_path, output_baseline_path, output_compare_path, original_filename, timestamp)
