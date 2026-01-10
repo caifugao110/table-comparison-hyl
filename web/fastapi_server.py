@@ -11,6 +11,8 @@ import datetime
 import shutil
 import webbrowser
 import threading
+import requests
+import json
 
 # 导入核心比较函数
 from compare_excel_web import compare_excel_files
@@ -60,6 +62,59 @@ async def download_file(filename: str):
         return FileResponse(file_path, filename=filename, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/get_project_info")
+async def get_project_info():
+    """获取项目信息，包括最新版本和最后更新日期"""
+    try:
+        # Gitee API参数
+        owner = "caifugao110"
+        repo = "table-comparison-hyl"
+        gitee_token = "a09da64c1d9e9c7420a18dfd838890b0"
+        headers = {
+            "Authorization": f"token {gitee_token}",
+            "Accept": "application/json"
+        }
+        
+        # 初始化变量
+        version = None
+        last_update_date = None
+        
+        # 获取最新发行版本
+        try:
+            release_url = f"https://gitee.com/api/v5/repos/{owner}/{repo}/releases/latest"
+            release_response = requests.get(release_url, headers=headers, timeout=10)
+            if release_response.status_code == 200:
+                release_data = release_response.json()
+                version = release_data.get("tag_name")
+        except Exception as e:
+            print(f"获取最新发行版本失败: {e}")
+        
+        # 获取最后一次提交日期
+        try:
+            commit_url = f"https://gitee.com/api/v5/repos/{owner}/{repo}/commits?per_page=1"
+            commit_response = requests.get(commit_url, headers=headers, timeout=10)
+            if commit_response.status_code == 200:
+                commit_data = commit_response.json()
+                if isinstance(commit_data, list) and len(commit_data) > 0:
+                    commit_date_str = commit_data[0]["commit"]["committer"]["date"]
+                    commit_date = datetime.datetime.fromisoformat(commit_date_str.replace("Z", ""))
+                    last_update_date = f"{commit_date.year}年{commit_date.month:02d}月"
+        except Exception as e:
+            print(f"获取最后提交日期失败: {e}")
+        
+        # 返回结果，不使用默认值
+        return JSONResponse({
+            "version": version,
+            "lastUpdateDate": last_update_date
+        })
+    except Exception as e:
+        # 记录错误但不使用默认值
+        print(f"获取项目信息失败: {e}")
+        return JSONResponse({
+            "version": None,
+            "lastUpdateDate": None
+        })
 
 @app.post("/api/compare")
 async def compare_excel(

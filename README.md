@@ -98,19 +98,14 @@
 
    ```python
    # 基准文件路径（my文件夹）
+   baseline_file = os.path.join(current_dir, "my", "销售毛利分析表.xlsx")
+
+   # 比较文件路径（from文件夹）
+   compare_file = os.path.join(current_dir, "from", "销售毛利分析表.xlsx")
+
+   # 结果文件保存目录
+   results_folder = os.path.join(current_dir, "results")
    ```
-
-baseline_file = os.path.join(current_dir, "my", "销售毛利分析表.xlsx")
-
-# 比较文件路径（from文件夹）
-
-compare_file = os.path.join(current_dir, "from", "销售毛利分析表.xlsx")
-
-# 结果文件保存目录
-
-results_folder = os.path.join(current_dir, "results")
-
-```
 
 ### 方式二：Web 界面方式 🖥️
 
@@ -118,7 +113,7 @@ results_folder = os.path.join(current_dir, "results")
    ```bash
    cd web
    python fastapi_server.py
-```
+   ```
 
 2. **访问 Web 界面** 🌐
    在浏览器中输入：`http://localhost:8000`
@@ -133,7 +128,7 @@ results_folder = os.path.join(current_dir, "results")
    - 查看执行状态和结果文件
    - 点击「下载文件」下载生成的结果文件
 
-### Web 界面功能特点 ✨
+#### Web 界面功能特点 ✨
 
 - 📊 直观的文件上传界面
 - 📈 实时显示执行进度
@@ -143,7 +138,7 @@ results_folder = os.path.join(current_dir, "results")
 - 🚀 基于 FastAPI 的高性能实现
 - 🔄 自动处理文件上传和临时文件清理
 
-### Web 服务器配置 ⚙️
+#### Web 服务器配置 ⚙️
 
 - **默认端口**：8000
 - **支持 CORS**：允许跨域访问

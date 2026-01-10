@@ -586,8 +586,8 @@
             <div class="footer-content">
                 <div class="footer-info">
                     <div><i class="fas fa-user"></i> 作者：Tobin</div>
-                    <div><i class="fas fa-code-branch"></i> 版本：V0.1.0</div>
-                    <div><i class="fas fa-calendar"></i> 更新日期：2026年01月</div>
+                    <div><i class="fas fa-code-branch"></i> 版本：<span id="release-version">V0.1.0</span></div>
+                    <div><i class="fas fa-calendar"></i> 更新日期：<span id="last-update-date">2026年01月</span></div>
                 </div>
                 <div class="footer-info">
                     <div><i class="fab fa-github"></i> GitHub：<a href="https://github.com/caifugao110/table-comparison-hyl" target="_blank">https://github.com/caifugao110/table-comparison-hyl</a></div>
@@ -989,6 +989,67 @@
         // 确保初始状态正确显示
         requestAnimationFrame(() => {
             status.scrollTop = status.scrollHeight;
+        });
+        
+        // 自动获取项目信息：最新发行版标签和最后一次提交日期
+        document.addEventListener("DOMContentLoaded", function() {
+            console.log('开始获取项目信息...');
+            const versionElement = document.getElementById('release-version');
+            const updateDateElement = document.getElementById('last-update-date');
+            const CACHE_KEY = 'project_info_cache';
+            const CACHE_EXPIRE = 3600000; // 1小时（毫秒）
+
+            // 检查缓存
+            console.log('检查缓存...');
+            const cachedData = localStorage.getItem(CACHE_KEY);
+            if (cachedData) {
+                const { version, lastUpdateDate, timestamp } = JSON.parse(cachedData);
+                if (Date.now() - timestamp < CACHE_EXPIRE) {
+                    console.log('使用缓存数据:', { version, lastUpdateDate });
+                    versionElement.textContent = version;
+                    updateDateElement.textContent = lastUpdateDate;
+                    return; // 直接使用缓存，不发起请求
+                }
+            }
+
+            // 缓存过期，发起请求（使用后端代理避免跨域问题）
+            console.log('缓存过期，发起请求...');
+            fetch('/api/get_project_info', {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => {
+                console.log('响应状态:', response.status);
+                if (!response.ok) {
+                    throw new Error(`HTTP错误: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('获取到的数据:', data);
+                // 处理版本号，不使用默认值
+                let version = data.version;
+                
+                // 处理最后更新日期，不使用默认值
+                let updateDate = data.lastUpdateDate;
+
+                // 更新页面显示
+                console.log('更新页面显示:', { version, updateDate });
+                versionElement.textContent = version;
+                updateDateElement.textContent = updateDate;
+
+                // 存入缓存
+                localStorage.setItem(CACHE_KEY, JSON.stringify({
+                    version,
+                    lastUpdateDate: updateDate,
+                    timestamp: Date.now()
+                }));
+            })
+            .catch(error => {
+                console.error('获取项目信息失败:', error);
+            });
         });
     </script>
 </body>
