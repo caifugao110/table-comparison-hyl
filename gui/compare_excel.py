@@ -23,7 +23,7 @@ DEFAULT_COLOR_THEME = "blue"     # "blue", "green", "dark-blue"
 ctk.set_appearance_mode(DEFAULT_APPEARANCE_MODE)
 ctk.set_default_color_theme(DEFAULT_COLOR_THEME)
 
-def compare_excel_files(baseline_path, compare_path, output_baseline_path, output_compare_path, results_folder, original_filename, timestamp, stop_event=None):
+def compare_excel_files(baseline_path, compare_path, output_baseline_path, output_compare_path, results_folder, original_filename, timestamp, header_row=3, key_fields=None, stop_event=None):
     # 获取文件夹名称用于标识
     baseline_folder = os.path.basename(os.path.dirname(baseline_path))
     compare_folder = os.path.basename(os.path.dirname(compare_path))
@@ -55,31 +55,10 @@ def compare_excel_files(baseline_path, compare_path, output_baseline_path, outpu
     log_queue.put(f"\n【{baseline_folder}文件夹】工作表列表: {wb_baseline.sheetnames}")
     log_queue.put(f"【{compare_folder}文件夹】工作表列表: {wb_compare.sheetnames}")
     
-    # 检查是否两个文件都只有一个工作表
-    sheet_count_baseline = len(wb_baseline.sheetnames)
-    sheet_count_compare = len(wb_compare.sheetnames)
-    
-    sheet_name = ""
-    if sheet_count_baseline == 1 and sheet_count_compare == 1:
-        # 两个文件都只有一个工作表，直接使用
-        sheet_name = wb_baseline.sheetnames[0]
-        log_queue.put(f"\n两个文件都只有一个工作表，直接比较: {sheet_name}")
-    else:
-        # 否则使用第一个工作表
-        log_queue.put("\n文件包含多个工作表，默认使用第一个工作表进行比较")
-    
-    if not sheet_name:
-        ws_baseline = wb_baseline.active
-        ws_compare = wb_compare.active
-        log_queue.put(f"默认比较: {ws_baseline.title} ({baseline_folder}) vs {ws_compare.title} ({compare_folder})")
-    else:
-        if sheet_name in wb_baseline.sheetnames and sheet_name in wb_compare.sheetnames:
-            ws_baseline = wb_baseline[sheet_name]
-            ws_compare = wb_compare[sheet_name]
-            log_queue.put(f"已选择工作表: {sheet_name}")
-        else:
-            log_queue.put("错误：输入的工作表名称在其中一个或两个文件中不存在。")
-            return False
+    # 默认使用第一个工作表
+    ws_baseline = wb_baseline.active
+    ws_compare = wb_compare.active
+    log_queue.put(f"默认比较第一个工作表: {ws_baseline.title} ({baseline_folder}) vs {ws_compare.title} ({compare_folder})")
 
     # 2. 获取实际使用的范围
     baseline_max_row = ws_baseline.max_row
@@ -88,6 +67,10 @@ def compare_excel_files(baseline_path, compare_path, output_baseline_path, outpu
     compare_max_col = ws_compare.max_column
 
     log_queue.put(f"开始比较 ({baseline_folder}文件夹: {baseline_max_row}行 x {baseline_max_col}列, {compare_folder}文件夹: {compare_max_row}行 x {compare_max_col}列)...")
+    
+    # 检查列数是否一致
+    if baseline_max_col != compare_max_col:
+        log_queue.put(f"警告：两个文件的列数不一致！基准文件：{baseline_max_col}列，比较文件：{compare_max_col}列")
 
     # 3. 预先获取所有单元格值
     cells_baseline = {}
@@ -118,22 +101,42 @@ def compare_excel_files(baseline_path, compare_path, output_baseline_path, outpu
         """获取一列的所有单元格内容，作为比较的键"""
         return tuple(cells.get((r, col_num), None) for r in range(1, max_row + 1))
     
-    # 定义关键字段
-    key_fields = ["部门", "合同号", "产品代码"]
+    # 如果没有提供关键字段，默认使用前三列作为特征列
+    if not key_fields:
+        # 获取表头行的列名
+        header_values = [cells_baseline.get((header_row, c), "").strip() for c in range(1, min(baseline_max_col + 1, 4))]
+        key_fields = [v for v in header_values if v]  # 过滤空值
+        if len(key_fields) < 3:
+            # 如果表头不足3个有效列名，使用默认列名
+            key_fields = [f"列{c}" for c in range(1, min(baseline_max_col + 1, 4))]
     
-    # 从第三行获取关键字段的列索引
-    def find_key_columns(ws, cells, max_col):
-        """从第三行查找关键字段的列索引"""
+    # 从指定表头行获取关键字段的列索引
+    def find_key_columns(cells, max_col, header_row_num, key_field_names):
+        """从指定行查找关键字段的列索引"""
         key_cols = {}
+        # 先获取表头行的所有列名
+        header_values = {}
         for col in range(1, max_col + 1):
-            cell_value = cells.get((3, col), "").strip()  # 第三行是表头
-            if cell_value in key_fields:
-                key_cols[cell_value] = col
+            cell_value = cells.get((header_row_num, col), "").strip()
+            header_values[cell_value] = col
+        
+        # 查找关键字段的列索引
+        for field in key_field_names:
+            if field in header_values:
+                key_cols[field] = header_values[field]
+            else:
+                # 如果找不到字段名，尝试直接使用列索引
+                try:
+                    col_idx = int(field.replace("列", ""))
+                    if 1 <= col_idx <= max_col:
+                        key_cols[field] = col_idx
+                except ValueError:
+                    pass
         return key_cols
     
     # 查找基准文件和比较文件的关键字段列索引
-    key_cols_baseline = find_key_columns(ws_baseline, cells_baseline, baseline_max_col)
-    key_cols_compare = find_key_columns(ws_compare, cells_compare, compare_max_col)
+    key_cols_baseline = find_key_columns(cells_baseline, baseline_max_col, header_row, key_fields)
+    key_cols_compare = find_key_columns(cells_compare, compare_max_col, header_row, key_fields)
     
     log_queue.put(f"\n基准文件关键字段列索引: {key_cols_baseline}")
     log_queue.put(f"比较文件关键字段列索引: {key_cols_compare}")
@@ -149,17 +152,19 @@ def compare_excel_files(baseline_path, compare_path, output_baseline_path, outpu
         log_queue.put("\n使用关键字段进行行匹配...")
         
         # 构建行关键字映射：关键字 -> 行号
-        def build_row_key_map(cells, max_row, key_cols):
+        def build_row_key_map(cells, max_row, key_cols, data_start_row):
             row_key_map = {}
-            for row in range(4, max_row + 1):  # 从第4行开始是数据行
+            for row in range(data_start_row, max_row + 1):  # 从数据行开始
                 key_values = tuple(cells.get((row, key_cols[field]), None) for field in key_fields)
                 # 只有当所有关键字段都有值时才进行映射
                 if all(v is not None for v in key_values):
                     row_key_map[key_values] = row
             return row_key_map
         
-        row_key_map_baseline = build_row_key_map(cells_baseline, baseline_max_row, key_cols_baseline)
-        row_key_map_compare = build_row_key_map(cells_compare, compare_max_row, key_cols_compare)
+        # 数据行从表头行的下一行开始
+        data_start_row = header_row + 1
+        row_key_map_baseline = build_row_key_map(cells_baseline, baseline_max_row, key_cols_baseline, data_start_row)
+        row_key_map_compare = build_row_key_map(cells_compare, compare_max_row, key_cols_compare, data_start_row)
         
         # 建立行映射：基准行 -> 比较行
         for key in row_key_map_baseline:
@@ -198,26 +203,6 @@ def compare_excel_files(baseline_path, compare_path, output_baseline_path, outpu
             min_rows = min(baseline_max_row, compare_max_row)
             row_mapping = {r: r for r in range(1, min_rows + 1)}
     
-    # 列匹配：基准列号 -> 比较列号
-    col_mapping = {}
-    
-    # 构建列内容映射
-    col_contents_baseline = {c: get_col_content(c, cells_baseline, baseline_max_row) for c in range(1, baseline_max_col + 1)}
-    col_contents_compare = {c: get_col_content(c, cells_compare, compare_max_row) for c in range(1, compare_max_col + 1)}
-    
-    # 先找到完全匹配的列
-    for col_baseline in col_contents_baseline:
-        content_baseline = col_contents_baseline[col_baseline]
-        for col_compare in col_contents_compare:
-            if col_compare not in col_mapping.values() and content_baseline == col_contents_compare[col_compare]:
-                col_mapping[col_baseline] = col_compare
-                break
-    
-    # 如果没有找到足够的匹配，使用简单的索引映射
-    if len(col_mapping) < min(baseline_max_col, compare_max_col) // 2:
-        min_cols = min(baseline_max_col, compare_max_col)
-        col_mapping = {c: c for c in range(1, min_cols + 1)}
-    
     # 5. 比较单元格
     changes_count = 0
     
@@ -228,6 +213,31 @@ def compare_excel_files(baseline_path, compare_path, output_baseline_path, outpu
     # 只比较匹配的行（基于关键字段匹配的行）
     log_queue.put("\n开始比较匹配行的单元格差异...")
     
+    # 创建列映射（基于列名匹配）
+    def create_col_name_map(header_row_num):
+        col_name_map = {}
+        # 先获取基准文件的列名映射
+        baseline_col_names = {}
+        for col_b in range(1, baseline_max_col + 1):
+            col_name_b = cells_baseline.get((header_row_num, col_b), "").strip()
+            if col_name_b:
+                baseline_col_names[col_name_b] = col_b
+        
+        # 然后在比较文件中查找相同列名
+        for col_c in range(1, compare_max_col + 1):
+            col_name_c = cells_compare.get((header_row_num, col_c), "").strip()
+            if col_name_c in baseline_col_names:
+                col_name_map[baseline_col_names[col_name_c]] = col_c
+        
+        # 如果没有找到足够的匹配，使用简单的索引映射
+        if len(col_name_map) < min(baseline_max_col, compare_max_col) // 2:
+            min_cols = min(baseline_max_col, compare_max_col)
+            col_name_map = {c: c for c in range(1, min_cols + 1)}
+        
+        return col_name_map
+    
+    col_name_map = create_col_name_map(header_row)
+    
     for row_baseline in row_mapping:
         # 检查是否需要停止
         if stop_event and stop_event.is_set():
@@ -235,25 +245,6 @@ def compare_excel_files(baseline_path, compare_path, output_baseline_path, outpu
             return False
             
         row_compare = row_mapping[row_baseline]
-        
-        # 获取当前行的所有列索引
-        baseline_cols = range(1, baseline_max_col + 1)
-        compare_cols = range(1, compare_max_col + 1)
-        
-        # 创建列映射（基于列名匹配）
-        col_name_map = {}
-        for col_b in baseline_cols:
-            # 获取基准文件列名
-            col_name_b = cells_baseline.get((3, col_b), "").strip()
-            if not col_name_b:
-                continue
-            
-            # 在比较文件中查找相同列名
-            for col_c in compare_cols:
-                col_name_c = cells_compare.get((3, col_c), "").strip()
-                if col_name_c == col_name_b:
-                    col_name_map[col_b] = col_c
-                    break
         
         # 比较匹配的列
         for col_baseline, col_compare in col_name_map.items():
@@ -274,10 +265,10 @@ def compare_excel_files(baseline_path, compare_path, output_baseline_path, outpu
     log_queue.put("\n开始标记新增行和删除行...")
     
     # 获取所有数据行的关键字映射
-    def get_all_row_keys(cells, max_row, key_cols):
+    def get_all_row_keys(cells, max_row, key_cols, data_start_row):
         """获取所有数据行的关键字映射"""
         all_row_keys = {}
-        for row in range(4, max_row + 1):  # 从第4行开始是数据行
+        for row in range(data_start_row, max_row + 1):  # 从数据行开始
             key_values = tuple(cells.get((row, key_cols[field]), None) for field in key_fields)
             if all(v is not None for v in key_values):
                 all_row_keys[key_values] = row
@@ -285,8 +276,9 @@ def compare_excel_files(baseline_path, compare_path, output_baseline_path, outpu
     
     if has_all_keys_baseline and has_all_keys_compare:
         # 获取所有数据行的关键字映射
-        all_baseline_keys = get_all_row_keys(cells_baseline, baseline_max_row, key_cols_baseline)
-        all_compare_keys = get_all_row_keys(cells_compare, compare_max_row, key_cols_compare)
+        data_start_row = header_row + 1
+        all_baseline_keys = get_all_row_keys(cells_baseline, baseline_max_row, key_cols_baseline, data_start_row)
+        all_compare_keys = get_all_row_keys(cells_compare, compare_max_row, key_cols_compare, data_start_row)
         
         # 标记删除行（基准文件中有，比较文件中没有）
         deleted_rows = 0
@@ -791,6 +783,68 @@ class ExcelCompareGUI(ctk.CTk):
             command=self._browse_result_folder
         ).pack(side="left", padx=5)
         
+        # 配置选项区
+        config_section = ctk.CTkFrame(left_panel, fg_color="transparent")
+        config_section.pack(fill="x", padx=15, pady=15)
+        
+        ctk.CTkLabel(
+            config_section, 
+            text="比较配置", 
+            font=("微软雅黑", 16, "bold")
+        ).pack(anchor="w", pady=(0, 10))
+        
+        # 表头行号选择
+        header_row_frame = ctk.CTkFrame(config_section, fg_color="transparent")
+        header_row_frame.pack(fill="x", pady=5)
+        
+        ctk.CTkLabel(
+            header_row_frame, 
+            text="表头行号:", 
+            width=100,
+            font=("微软雅黑", 12)
+        ).pack(side="left", anchor="center")
+        
+        self.header_row_var = ctk.StringVar(value="3")
+        self.header_row_entry = ctk.CTkEntry(header_row_frame, textvariable=self.header_row_var, font=("微软雅黑", 12), width=60)
+        self.header_row_entry.pack(side="left", padx=5)
+        
+        ctk.CTkLabel(
+            header_row_frame, 
+            text="(表头所在行，从1开始)", 
+            font=("微软雅黑", 10),
+            text_color="gray50"
+        ).pack(side="left", anchor="center", padx=5)
+        
+        # 特征列选择
+        feature_cols_frame = ctk.CTkFrame(config_section, fg_color="transparent")
+        feature_cols_frame.pack(fill="x", pady=5)
+        
+        ctk.CTkLabel(
+            feature_cols_frame, 
+            text="特征列:", 
+            width=100,
+            font=("微软雅黑", 12)
+        ).pack(side="left", anchor="center")
+        
+        self.feature_cols_var = ctk.StringVar(value="前三列")
+        self.feature_cols_entry = ctk.CTkEntry(feature_cols_frame, textvariable=self.feature_cols_var, font=("微软雅黑", 12))
+        self.feature_cols_entry.pack(side="left", fill="x", expand=True, padx=5)
+        
+        ctk.CTkButton(
+            feature_cols_frame, 
+            text="选择", 
+            width=60,
+            font=("微软雅黑", 12),
+            command=self._select_feature_columns
+        ).pack(side="left", padx=5)
+        
+        ctk.CTkLabel(
+            config_section, 
+            text="提示: 特征列用于判断行的增删变化，默认使用前三列，最多支持6列", 
+            font=("微软雅黑", 10),
+            text_color="gray50"
+        ).pack(anchor="w", pady=(5, 0))
+        
         # 操作按钮区
         button_section = ctk.CTkFrame(left_panel, fg_color="transparent")
         button_section.pack(fill="x", padx=15, pady=15)
@@ -930,9 +984,116 @@ class ExcelCompareGUI(ctk.CTk):
         self.stop_event.set()
         self.stop_button.configure(state="disabled")
     
+    def _select_feature_columns(self):
+        """选择特征列"""
+        if not self.baseline_file:
+            messagebox.showerror("错误", "请先选择基准文件")
+            return
+        
+        try:
+            # 加载基准文件获取表头信息
+            wb = openpyxl.load_workbook(self.baseline_file, data_only=True)
+            ws = wb.active
+            
+            # 获取用户输入的表头行号
+            try:
+                header_row = int(self.header_row_var.get())
+            except ValueError:
+                messagebox.showerror("错误", "表头行号必须是数字")
+                return
+            
+            # 获取表头行的列名
+            max_col = ws.max_column
+            header_values = []
+            for col in range(1, max_col + 1):
+                cell_value = ws.cell(row=header_row, column=col).value
+                if cell_value:
+                    header_values.append(f"{col}: {cell_value.strip()}")
+                else:
+                    header_values.append(f"{col}: 空")
+            
+            # 创建特征列选择窗口
+            select_window = ctk.CTkToplevel(self)
+            select_window.title("选择特征列")
+            select_window.geometry("400x300")
+            select_window.resizable(False, False)
+            
+            # 居中显示
+            select_window.transient(self)
+            select_window.grab_set()
+            
+            # 创建列表框
+            listbox = ctk.CTkScrollableFrame(select_window)
+            listbox.pack(fill="both", expand=True, padx=10, pady=10)
+            
+            # 存储选中的列
+            selected_cols = []
+            
+            # 创建复选框
+            checkboxes = []
+            for i, header in enumerate(header_values[:20]):  # 最多显示20列
+                var = ctk.IntVar()
+                checkbox = ctk.CTkCheckBox(listbox, text=header, variable=var)
+                checkbox.pack(anchor="w", pady=5)
+                checkboxes.append((var, i + 1))  # 列号从1开始
+            
+            # 选择按钮
+            def on_select():
+                selected = [col for var, col in checkboxes if var.get() == 1]
+                if len(selected) == 0:
+                    messagebox.showerror("错误", "请至少选择1列")
+                    return
+                if len(selected) > 6:
+                    messagebox.showerror("错误", "最多只能选择6列")
+                    return
+                
+                # 更新特征列显示
+                self.feature_cols_var.set(", ".join(map(str, selected)))
+                select_window.destroy()
+            
+            select_button = ctk.CTkButton(select_window, text="确定", command=on_select, fg_color="#4CAF50")
+            select_button.pack(pady=10)
+            
+        except Exception as e:
+            messagebox.showerror("错误", f"加载文件失败: {str(e)}")
+    
     def _compare_worker(self):
         """比较工作线程"""
         try:
+            # 获取表头行号
+            try:
+                header_row = int(self.header_row_var.get())
+            except ValueError:
+                log_queue.put("\n❌ 错误：表头行号必须是数字")
+                return False
+            
+            # 获取特征列
+            feature_cols_str = self.feature_cols_var.get()
+            key_fields = None
+            if feature_cols_str != "前三列":
+                try:
+                    # 解析特征列，支持多种格式："1,2,3" 或 "1 2 3" 或 "1-3"
+                    feature_cols = []
+                    # 处理逗号分隔
+                    parts = [p.strip() for p in feature_cols_str.split(",")]
+                    for part in parts:
+                        # 处理空格分隔
+                        sub_parts = [sp.strip() for sp in part.split() if sp.strip()]
+                        for sub_part in sub_parts:
+                            # 处理范围
+                            if "-" in sub_part:
+                                start, end = map(int, sub_part.split("-"))
+                                feature_cols.extend(range(start, end + 1))
+                            else:
+                                feature_cols.append(int(sub_part))
+                    # 去重并排序
+                    feature_cols = sorted(list(set(feature_cols)))
+                    # 转换为列名格式
+                    key_fields = [f"列{col}" for col in feature_cols]
+                except ValueError:
+                    log_queue.put("\n❌ 错误：特征列格式无效")
+                    return False
+            
             # 生成结果文件名
             baseline_folder = os.path.basename(os.path.dirname(self.baseline_file))
             compare_folder = os.path.basename(os.path.dirname(self.compare_file))
@@ -958,6 +1119,8 @@ class ExcelCompareGUI(ctk.CTk):
                 self.results_folder,
                 original_filename,
                 timestamp,
+                header_row,
+                key_fields,
                 self.stop_event
             )
             

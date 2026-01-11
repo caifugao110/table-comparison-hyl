@@ -119,10 +119,22 @@ async def get_project_info():
 @app.post("/api/compare")
 async def compare_excel(
     baselineFile: UploadFile = File(...),
-    compareFile: UploadFile = File(...)
+    compareFile: UploadFile = File(...),
+    header_row: int = 3,
+    key_fields: str = None
 ):
     """比较两个Excel文件"""
     try:
+        # 处理特征列参数
+        parsed_key_fields = None
+        if key_fields:
+            try:
+                # 解析JSON格式的特征列
+                parsed_key_fields = json.loads(key_fields)
+            except json.JSONDecodeError:
+                # 如果不是JSON格式，尝试解析为逗号分隔的字符串
+                parsed_key_fields = [field.strip() for field in key_fields.split(",") if field.strip()]
+        
         # 生成唯一的文件名和时间戳
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
         original_filename = os.path.splitext(baselineFile.filename)[0]
@@ -153,7 +165,9 @@ async def compare_excel(
                 result_baseline,     # 输出基准文件路径
                 result_compare,      # 输出比较文件路径
                 original_filename,   # 原始文件名
-                timestamp            # 时间戳
+                timestamp,           # 时间戳
+                header_row,          # 表头行号
+                parsed_key_fields    # 特征列
             )
         
         # 获取函数输出
