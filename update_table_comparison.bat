@@ -1,11 +1,11 @@
 @echo off
-REM table-comparison-hyl æ›´æ–°å·¥å…·
+REM table-comparison-hyl ¸üÐÂ¹¤¾ß
 chcp 936 >nul
-TITLE table-comparison-hyl æ›´æ–°å·¥å…·
-COLOR 24
+TITLE table-comparison-hyl ¸üÐÂ¹¤¾ß
+COLOR 0A
 CLS
 
-ECHO ============= table-comparison-hyl æ›´æ–°å·¥å…· =============
+ECHO ============= table-comparison-hyl ¸üÐÂ¹¤¾ß =============
 ECHO.
 
 SET GIT_REPO=https://gitee.com/caifugao110/table-comparison-hyl.git
@@ -18,48 +18,49 @@ IF NOT EXIST "%DEST_DIR%" MKDIR "%DEST_DIR%"
 IF EXIST "%TEMP_DIR%" RMDIR /S /Q "%TEMP_DIR%"
 MKDIR "%TEMP_DIR%"
 
-ECHO 1/5 æµ‹è¯•è¿žæŽ¥...
+ECHO 1/5 ²âÊÔÁ¬½Ó...
 where git >nul 2>nul || (
     COLOR 44
-    ECHO Gitæœªå®‰è£…ï¼
+    ECHO GitÎ´°²×°£¡
     pause
     exit /b 1
 )
 
-ECHO 2/5 å…‹éš†ä»“åº“...
+ECHO 2/5 ¿ËÂ¡²Ö¿â...
 git clone "%GIT_REPO%" "%TEMP_DIR%\table-comparison-hyl-master" --depth 1 >nul 2>nul || (
     COLOR 44
-    ECHO å…‹éš†å¤±è´¥ï¼
+    ECHO ¿ËÂ¡Ê§°Ü£¡
     pause
     exit /b 1
 )
 
-ECHO 3/5 æ£€æŸ¥ç»“æž„...
+ECHO 3/5 ¼ì²é½á¹¹...
 IF EXIST "%TEMP_DIR%\table-comparison-hyl-master" (
-    IF NOT EXIST "%DEST_DIR%\table-comparison-hyl-master" MKDIR "%DEST_DIR%\table-comparison-hyl-master"
+    REM Çå¿ÕÄ¿±êÎÄ¼þ¼Ð
+    IF EXIST "%DEST_DIR%\table-comparison-hyl-master" RMDIR /S /Q "%DEST_DIR%\table-comparison-hyl-master"
+    MKDIR "%DEST_DIR%\table-comparison-hyl-master"
     
-    ECHO 4/5 å¤åˆ¶æ–‡ä»¶...
-    ROBOCOPY "%TEMP_DIR%\table-comparison-hyl-master" "%DEST_DIR%\table-comparison-hyl-master" /E /XF "%BAT_NAME%" /XD ".git" /XX /NFL /NDL /NJH /NJS >nul
+    ECHO 4/5 ¸´ÖÆÎÄ¼þ...
+    ROBOCOPY "%TEMP_DIR%\table-comparison-hyl-master" "%DEST_DIR%\table-comparison-hyl-master" /E /XF ".gitignore" "from\.gitkeep" /XD ".git" /XX /NFL /NDL /NJH /NJS >nul
     
     IF %ERRORLEVEL% GTR 8 (
         COLOR 44
-        ECHO å¤åˆ¶å¤±è´¥ï¼
+        ECHO ¸´ÖÆÊ§°Ü£¡
         pause
         exit /b 1
     )
 ) ELSE (
     COLOR 44
-    ECHO ç»“æž„é”™è¯¯ï¼
+    ECHO ½á¹¹´íÎó£¡
     pause
     exit /b 1
 )
 
-ECHO 5/5 æ¸…ç†æ–‡ä»¶...
+ECHO 5/5 ÇåÀíÎÄ¼þ...
 RMDIR /S /Q "%TEMP_DIR%"
 
-CLS
-ECHO ============= æ›´æ–°å®Œæˆï¼ =============
-ECHO å·²æ›´æ–°åˆ°ï¼š
+ECHO ============= ¸üÐÂÍê³É£¡ =============
+ECHO ÒÑ¸üÐÂµ½£º
 ECHO %DEST_DIR%\table-comparison-hyl-master
 ECHO =======================================
 
