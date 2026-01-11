@@ -1,25 +1,36 @@
-# 📊 销售毛利分析表比较工具
+# 📊 EXCEL文件比较工具
 
 ## 📝 项目简介
 
-本工具用于比较两个Excel销售毛利分析表文件，自动标记差异内容，包括数值变化、新增行和删除行，帮助用户快速识别两个版本的销售数据差异。提供两种使用方式：GUI界面和Web界面。
+本工具用于比较两个Excel文件，自动标记差异内容，包括数值变化、新增行和删除行，帮助用户快速识别两个Excel文件的数据差异。提供两种使用方式：GUI界面和Web界面。
 
 ## 🛠️ 项目依赖
+
+### 快速安装
+
+使用 `requirements.txt` 文件一键安装所有依赖：
+
+```bash
+pip install -r requirements.txt
+```
 
 ### 外部库
 
 - **openpyxl**: 用于Excel文件的读取、写入和样式设置
-  - 安装命令: `pip install openpyxl`
 - **fastapi**: 用于构建高性能的Web API服务
-  - 安装命令: `pip install fastapi`
 - **uvicorn**: 用于运行FastAPI应用的ASGI服务器
-  - 安装命令: `pip install uvicorn`
 - **python-multipart**: 用于FastAPI处理文件上传
-  - 安装命令: `pip install python-multipart`
 - **customtkinter**: 用于构建现代化的GUI界面
-  - 安装命令: `pip install customtkinter`
 - **pillow**: 用于GUI界面的图标处理
-  - 安装命令: `pip install pillow`
+- **requests**: 用于API请求和版本更新检查
+
+### 单独安装（可选）
+
+如果需要单独安装某个依赖，可以使用以下命令：
+
+```bash
+pip install openpyxl fastapi uvicorn python-multipart customtkinter pillow requests
+```
 
 ### 标准库
 

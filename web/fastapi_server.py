@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
@@ -115,6 +115,64 @@ async def get_project_info():
             "version": None,
             "lastUpdateDate": None
         })
+
+@app.post("/api/preview")
+async def preview_excel(
+    baselineFile: UploadFile = File(...),
+    header_row: int = Form(...)
+):
+    """预览Excel文件的表头行和特征列"""
+    try:
+        import openpyxl
+        
+        # 保存上传的文件到临时位置
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.xlsx') as temp_baseline:
+            temp_baseline.write(await baselineFile.read())
+            baseline_file_path = temp_baseline.name
+        
+        try:
+            # 加载Excel文件
+            wb = openpyxl.load_workbook(baseline_file_path, data_only=True)
+            ws = wb.active
+            
+            # 获取前10行数据用于预览
+            max_preview_row = min(10, ws.max_row)
+            max_preview_col = min(20, ws.max_column)
+            
+            # 预览数据
+            preview_data = []
+            for r in range(1, max_preview_row + 1):
+                row_data = []
+                for c in range(1, max_preview_col + 1):
+                    cell_value = ws.cell(row=r, column=c).value
+                    row_data.append(str(cell_value) if cell_value is not None else "")
+                preview_data.append({
+                    "row": r,
+                    "data": row_data
+                })
+            
+            # 获取表头行数据
+            header_data = []
+            if header_row <= ws.max_row:
+                for c in range(1, max_preview_col + 1):
+                    cell_value = ws.cell(row=header_row, column=c).value
+                    header_data.append({
+                        "col": c,
+                        "name": str(cell_value) if cell_value is not None else f"列{c}"
+                    })
+            
+            return JSONResponse({
+                "success": True,
+                "preview_data": preview_data,
+                "header_data": header_data,
+                "max_row": ws.max_row,
+                "max_col": ws.max_column
+            })
+        finally:
+            # 清理临时文件
+            os.unlink(baseline_file_path)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/compare")
 async def compare_excel(

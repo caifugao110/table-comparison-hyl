@@ -1,0 +1,7 @@
+fastapi
+uvicorn
+openpyxl
+requests
+python-multipart
+customtkinter
+pillow

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>销售毛利分析表比较工具</title>
+    <title>EXCEL文件比较工具</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -575,8 +575,8 @@
     <div class="particles" id="particles"></div>
     <div class="container">
         <div class="header">
-            <h1><i class="fas fa-file-excel"></i>销售毛利分析表比较工具</h1>
-            <p>轻松比较两个销售毛利分析表文件的差异，生成可视化的比较结果</p>
+            <h1><i class="fas fa-file-excel"></i>EXCEL文件比较工具</h1>
+            <p>轻松比较两个EXCEL文件的差异，生成可视化的比较结果</p>
         </div>
         
         <div class="content">
@@ -616,24 +616,74 @@
                         <div class="config-row">
                             <div class="config-item">
                                 <label for="headerRow">表头行号</label>
-                                <input type="number" id="headerRow" name="header_row" min="1" value="3" class="config-input">
-                                <span class="config-hint">表头所在行，从1开始</span>
+                                <div style="display: flex; gap: 10px; align-items: center;">
+                                    <input type="number" id="headerRow" name="header_row" min="1" class="config-input" style="flex: 1;" readonly>
+                                    <button type="button" id="previewBtn" class="btn btn-primary" style="padding: 12px 20px; font-size: 14px;">
+                                        <i class="fas fa-table"></i> 选择
+                                    </button>
+                                </div>
+                                <span class="config-hint">请点击'选择'按钮查看并选择表头行号</span>
                             </div>
                             <div class="config-item">
                                 <label for="keyFields">特征列</label>
-                                <input type="text" id="keyFields" name="key_fields" placeholder="前三列" class="config-input">
-                                <span class="config-hint">用于判断行增删的列，默认前三列，最多6列，格式：1,2,3</span>
+                                <div style="display: flex; gap: 10px; align-items: center;">
+                                    <input type="text" id="keyFields" name="key_fields" placeholder="1,2,3" class="config-input" style="flex: 1;" readonly>
+                                    <button type="button" id="selectKeyFieldsBtn" class="btn btn-primary" style="padding: 12px 20px; font-size: 14px;">
+                                        <i class="fas fa-list"></i> 选择
+                                    </button>
+                                </div>
+                                <span class="config-hint">请点击'选择'按钮查看并选择特征列，最多支持6列，默认使用列: 1,2,3</span>
+                                <span class="config-hint" style="color: red; font-weight: bold; margin-top: 5px; display: block;">提示: 特征列用于判断行的增删变化，特征列内容的变化不视为数值变化</span>
+                            </div>
+                        </div>
+                        
+                        <!-- 预览表格 -->
+                        <div id="previewSection" class="hidden" style="margin-top: 20px; background: white; border-radius: 8px; padding: 15px; border: 1px solid #e0e0e0;">
+                            <h4 style="margin-bottom: 15px; color: var(--primary);">选择表头行号</h4>
+                            <div style="overflow-x: auto;">
+                                <table id="previewTable" style="border-collapse: collapse; width: 100%; font-size: 12px;">
+                                    <thead>
+                                        <tr id="previewHeader" style="background: var(--light);"></tr>
+                                    </thead>
+                                    <tbody id="previewBody"></tbody>
+                                </table>
+                            </div>
+                            <div style="margin-top: 15px; display: flex; gap: 10px;">
+                                <button type="button" id="confirmHeaderRowBtn" class="btn btn-success" style="padding: 10px 20px; font-size: 14px;">
+                                    <i class="fas fa-check"></i> 确认表头行
+                                </button>
+                                <button type="button" id="closePreviewBtn" class="btn" style="padding: 10px 20px; font-size: 14px; background: #6c757d; color: white;">
+                                    <i class="fas fa-times"></i> 关闭预览
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- 特征列选择 -->
+                        <div id="featureColsSection" class="hidden" style="margin-top: 20px; background: white; border-radius: 8px; padding: 15px; border: 1px solid #e0e0e0;">
+                            <h4 style="margin-bottom: 15px; color: var(--primary);">选择特征列</h4>
+                            <div id="featureColsList" style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px;"></div>
+                            <div style="display: flex; gap: 10px;">
+                                <button type="button" id="confirmFeatureColsBtn" class="btn btn-success" style="padding: 10px 20px; font-size: 14px;">
+                                    <i class="fas fa-check"></i> 确认特征列
+                                </button>
+                                <button type="button" id="closeFeatureColsBtn" class="btn" style="padding: 10px 20px; font-size: 14px; background: #6c757d; color: white;">
+                                    <i class="fas fa-times"></i> 关闭预览
+                                </button>
                             </div>
                         </div>
                     </div>
                     
-                    <div class="execute-section">
-                        <button type="submit" id="executeBtn" class="btn btn-primary">
-                            <i class="fas fa-play"></i>
-                            <span id="btnText">开始比较</span>
-                            <span id="loadingSpinner" class="loading hidden"></span>
-                        </button>
-                    </div>
+                    <div class="execute-section" style="display: flex; gap: 20px; justify-content: center;">
+                <button type="submit" id="executeBtn" class="btn btn-primary">
+                    <i class="fas fa-play"></i>
+                    <span id="btnText">开始比较</span>
+                    <span id="loadingSpinner" class="loading hidden"></span>
+                </button>
+                <button type="button" id="resetBtn" class="btn" style="background: #6c757d; color: white;">
+                    <i class="fas fa-redo"></i>
+                    <span>重置选择</span>
+                </button>
+            </div>
                 </form>
             </div>
             
@@ -657,7 +707,7 @@
         <div class="footer">
             <div class="footer-content">
                 <div class="footer-info">
-                    <div><i class="fas fa-user"></i> 作者：Tobin</div>
+                    <div><i class="fas fa-user"></i> 作者：Heyanlin</div>
                     <div><i class="fas fa-code-branch"></i> 版本：<span id="release-version">V0.1.0</span></div>
                     <div><i class="fas fa-calendar"></i> 更新日期：<span id="last-update-date">2026年01月</span></div>
                 </div>
@@ -665,463 +715,876 @@
                     <div><i class="fab fa-github"></i> GitHub：<a href="https://github.com/caifugao110/table-comparison-hyl" target="_blank">https://github.com/caifugao110/table-comparison-hyl</a></div>
                 </div>
                 <div class="footer-info">
-                    <div><i class="fas fa-info-circle"></i> 功能说明：本工具用于比较两个销售毛利分析表文件，自动标记差异内容，包括数值变化、新增行和删除行。</div>
+                    <div><i class="fas fa-info-circle"></i> 功能说明：本工具用于比较两个EXCEL文件，自动标记差异内容，包括数值变化、新增行和删除行。</div>
                 </div>
             </div>
         </div>
     </div>
     
     <script>
-        // 创建粒子背景
-        function createParticles() {
-            try {
-                const particlesContainer = document.getElementById('particles');
-                if (!particlesContainer) return;
-                
-                const particleCount = 30;
-                for (let i = 0; i < particleCount; i++) {
-                    const particle = document.createElement('div');
-                    particle.classList.add('particle');
+        document.addEventListener('DOMContentLoaded', function() {
+            // 创建粒子背景
+            function createParticles() {
+                try {
+                    const particlesContainer = document.getElementById('particles');
+                    if (!particlesContainer) return;
                     
-                    const size = Math.random() * 20 + 5;
-                    const left = Math.random() * 100;
-                    const animationDuration = Math.random() * 20 + 10;
-                    const animationDelay = Math.random() * 5;
-                    
-                    particle.style.width = `${size}px`;
-                    particle.style.height = `${size}px`;
-                    particle.style.left = `${left}%`;
-                    particle.style.animationDuration = `${animationDuration}s`;
-                    particle.style.animationDelay = `${animationDelay}s`;
-                    
-                    particlesContainer.appendChild(particle);
+                    const particleCount = 30;
+                    for (let i = 0; i < particleCount; i++) {
+                        const particle = document.createElement('div');
+                        particle.classList.add('particle');
+                        
+                        const size = Math.random() * 20 + 5;
+                        const left = Math.random() * 100;
+                        const animationDuration = Math.random() * 20 + 10;
+                        const animationDelay = Math.random() * 5;
+                        
+                        particle.style.width = `${size}px`;
+                        particle.style.height = `${size}px`;
+                        particle.style.left = `${left}%`;
+                        particle.style.animationDuration = `${animationDuration}s`;
+                        particle.style.animationDelay = `${animationDelay}s`;
+                        
+                        particlesContainer.appendChild(particle);
+                    }
+                } catch (e) {
+                    console.error('粒子背景创建失败:', e);
                 }
-            } catch (e) {
-                console.error('粒子背景创建失败:', e);
             }
-        }
-        
-        const compareForm = document.getElementById('compareForm');
-        const baselineFile = document.getElementById('baselineFile');
-        const compareFile = document.getElementById('compareFile');
-        const baselineInfo = document.getElementById('baselineInfo');
-        const compareInfo = document.getElementById('compareInfo');
-        const executeBtn = document.getElementById('executeBtn');
-        const btnText = document.getElementById('btnText');
-        const loadingSpinner = document.getElementById('loadingSpinner');
-        const status = document.getElementById('status');
-        const progressFill = document.getElementById('progressFill');
-        const resultsSection = document.getElementById('resultsSection');
-        const resultsList = document.getElementById('resultsList');
-        
-        // 优化状态更新，减少DOM重绘
-        function updateStatus(message, type = 'info') {
-            const timestamp = new Date().toLocaleTimeString();
-            const typeClass = {
-                info: 'info',
-                success: 'success',
-                error: 'error'
-            }[type];
             
-            // 创建新的状态行元素
-            const statusLine = document.createElement('div');
-            statusLine.innerHTML = `[${timestamp}] <span class="${typeClass}">${message}</span>`;
+            // 初始化粒子背景
+            createParticles();
             
-            // 追加到状态容器
-            status.appendChild(statusLine);
-            status.appendChild(document.createElement('br'));
+            // 获取所有DOM元素
+            const compareForm = document.getElementById('compareForm');
+            const baselineFile = document.getElementById('baselineFile');
+            const compareFile = document.getElementById('compareFile');
+            const baselineInfo = document.getElementById('baselineInfo');
+            const compareInfo = document.getElementById('compareInfo');
+            const executeBtn = document.getElementById('executeBtn');
+            const resetBtn = document.getElementById('resetBtn');
+            const btnText = document.getElementById('btnText');
+            const loadingSpinner = document.getElementById('loadingSpinner');
+            const status = document.getElementById('status');
+            const progressFill = document.getElementById('progressFill');
+            const resultsSection = document.getElementById('resultsSection');
+            const resultsList = document.getElementById('resultsList');
+            const previewBtn = document.getElementById('previewBtn');
+            const previewSection = document.getElementById('previewSection');
+            const previewTable = document.getElementById('previewTable');
+            const previewHeader = document.getElementById('previewHeader');
+            const previewBody = document.getElementById('previewBody');
+            const confirmHeaderRowBtn = document.getElementById('confirmHeaderRowBtn');
+            const closePreviewBtn = document.getElementById('closePreviewBtn');
+            const featureColsSection = document.getElementById('featureColsSection');
+            const featureColsList = document.getElementById('featureColsList');
+            const confirmFeatureColsBtn = document.getElementById('confirmFeatureColsBtn');
+            const closeFeatureColsBtn = document.getElementById('closeFeatureColsBtn');
+            const selectKeyFieldsBtn = document.getElementById('selectKeyFieldsBtn');
+            const keyFieldsInput = document.getElementById('keyFields');
+            const headerRowInput = document.getElementById('headerRow');
             
-            // 滚动到底部
-            status.scrollTop = status.scrollHeight;
-        }
-        
-        // 使用requestAnimationFrame优化DOM更新
-        function updateProgress(percent) {
-            requestAnimationFrame(() => {
-                progressFill.style.width = `${percent}%`;
-            });
-        }
-        
-        // 优化DOM操作，减少重排重绘
-        function addResultItem(filePath) {
-            const fileName = filePath.split('\\').pop();
+            // 预览功能相关变量
+            let currentPreviewData = [];
+            let currentHeaderData = [];
+            let selectedFeatureCols = [1, 2, 3]; // 默认选择前3列
             
-            // 使用document.createElement替代innerHTML，减少重绘
-            const resultItem = document.createElement('div');
-            resultItem.className = 'result-item';
+            // 优化状态更新，减少DOM重绘
+            function updateStatus(message, type = 'info') {
+                const timestamp = new Date().toLocaleTimeString();
+                const typeClass = {
+                    info: 'info',
+                    success: 'success',
+                    error: 'error'
+                }[type];
+                
+                // 创建新的状态行元素
+                const statusLine = document.createElement('div');
+                statusLine.innerHTML = `[${timestamp}] <span class="${typeClass}">${message}</span>`;
+                
+                // 追加到状态容器
+                status.appendChild(statusLine);
+                status.appendChild(document.createElement('br'));
+                
+                // 滚动到底部
+                status.scrollTop = status.scrollHeight;
+            }
             
-            // 创建result-info容器
-            const resultInfo = document.createElement('div');
-            resultInfo.className = 'result-info';
+            // 使用requestAnimationFrame优化DOM更新
+            function updateProgress(percent) {
+                requestAnimationFrame(() => {
+                    progressFill.style.width = `${percent}%`;
+                });
+            }
             
-            // 创建result-name
-            const resultName = document.createElement('div');
-            resultName.className = 'result-name';
-            resultName.textContent = fileName;
+            // 优化DOM操作，减少重排重绘
+            function addResultItem(filePath) {
+                const fileName = filePath.split('\\').pop();
+                
+                // 使用document.createElement替代innerHTML，减少重绘
+                const resultItem = document.createElement('div');
+                resultItem.className = 'result-item';
+                
+                // 创建result-info容器
+                const resultInfo = document.createElement('div');
+                resultInfo.className = 'result-info';
+                
+                // 创建result-name
+                const resultName = document.createElement('div');
+                resultName.className = 'result-name';
+                resultName.textContent = fileName;
+                
+                // 创建result-path
+                const resultPath = document.createElement('div');
+                resultPath.className = 'result-path';
+                resultPath.textContent = filePath;
+                
+                // 创建打开按钮
+                const openBtn = document.createElement('a');
+                openBtn.className = 'btn btn-secondary';
+                // 从完整路径中提取文件名
+                const fileNameOnly = filePath.split('\\').pop();
+                // 使用API端点下载文件
+                openBtn.href = `/api/download/${encodeURIComponent(fileNameOnly)}`;
+                openBtn.target = '_blank';
+                openBtn.innerHTML = '<i class="fas fa-folder-open"></i> 打开文件';
+                
+                // 组装元素
+                resultInfo.appendChild(resultName);
+                resultInfo.appendChild(resultPath);
+                resultItem.appendChild(resultInfo);
+                resultItem.appendChild(openBtn);
+                
+                // 使用requestAnimationFrame优化添加元素
+                requestAnimationFrame(() => {
+                    resultsList.appendChild(resultItem);
+                });
+            }
             
-            // 创建result-path
-            const resultPath = document.createElement('div');
-            resultPath.className = 'result-path';
-            resultPath.textContent = filePath;
+            // 优化结果清除操作
+            function clearResults() {
+                requestAnimationFrame(() => {
+                    resultsList.innerHTML = '';
+                    resultsSection.classList.add('hidden');
+                });
+            }
             
-            // 创建打开按钮
-            const openBtn = document.createElement('a');
-            openBtn.className = 'btn btn-secondary';
-            // 从完整路径中提取文件名
-            const fileNameOnly = filePath.split('\\').pop();
-            // 使用API端点下载文件
-            openBtn.href = `/api/download/${encodeURIComponent(fileNameOnly)}`;
-            openBtn.target = '_blank';
-            openBtn.innerHTML = '<i class="fas fa-folder-open"></i> 打开文件';
+            // 优化加载状态显示
+            function showLoading(show) {
+                requestAnimationFrame(() => {
+                    if (show) {
+                        btnText.textContent = '比较中...';
+                        loadingSpinner.classList.remove('hidden');
+                        executeBtn.disabled = true;
+                        executeBtn.classList.remove('btn-success');
+                        executeBtn.classList.add('btn-primary');
+                        // 添加加载中的视觉反馈
+                        executeBtn.style.opacity = '0.9';
+                    } else {
+                        // 只修改文字，不添加额外图标
+                        btnText.textContent = '开始比较';
+                        // 更新按钮图标
+                        const btnIcon = executeBtn.querySelector('i');
+                        if (btnIcon) {
+                            btnIcon.className = 'fas fa-play';
+                        }
+                        loadingSpinner.classList.add('hidden');
+                        executeBtn.disabled = false;
+                        executeBtn.classList.remove('btn-success');
+                        executeBtn.classList.add('btn-primary');
+                        // 恢复正常状态
+                        executeBtn.style.opacity = '1';
+                    }
+                });
+            }
             
-            // 组装元素
-            resultInfo.appendChild(resultName);
-            resultInfo.appendChild(resultPath);
-            resultItem.appendChild(resultInfo);
-            resultItem.appendChild(openBtn);
-            
-            // 使用requestAnimationFrame优化添加元素
-            requestAnimationFrame(() => {
-                resultsList.appendChild(resultItem);
-            });
-        }
-        
-        // 优化结果清除操作
-        function clearResults() {
-            requestAnimationFrame(() => {
-                resultsList.innerHTML = '';
-                resultsSection.classList.add('hidden');
-            });
-        }
-        
-        // 优化加载状态显示
-        function showLoading(show) {
-            requestAnimationFrame(() => {
-                if (show) {
-                    btnText.textContent = '比较中...';
-                    loadingSpinner.classList.remove('hidden');
-                    executeBtn.disabled = true;
-                    executeBtn.classList.remove('btn-success');
-                    executeBtn.classList.add('btn-primary');
-                    // 添加加载中的视觉反馈
-                    executeBtn.style.opacity = '0.9';
-                } else {
+            // 显示比较完成状态
+            function showCompleted() {
+                requestAnimationFrame(() => {
                     // 只修改文字，不添加额外图标
-                    btnText.textContent = '开始比较';
+                    btnText.textContent = '比较完成';
                     // 更新按钮图标
                     const btnIcon = executeBtn.querySelector('i');
                     if (btnIcon) {
-                        btnIcon.className = 'fas fa-play';
+                        btnIcon.className = 'fas fa-check';
                     }
                     loadingSpinner.classList.add('hidden');
-                    executeBtn.disabled = false;
-                    executeBtn.classList.remove('btn-success');
-                    executeBtn.classList.add('btn-primary');
-                    // 恢复正常状态
+                    executeBtn.disabled = true;
+                    executeBtn.classList.remove('btn-primary');
+                    executeBtn.classList.add('btn-success');
                     executeBtn.style.opacity = '1';
-                }
-            });
-        }
-        
-        // 显示比较完成状态
-        function showCompleted() {
-            requestAnimationFrame(() => {
-                // 只修改文字，不添加额外图标
-                btnText.textContent = '比较完成';
-                // 更新按钮图标
-                const btnIcon = executeBtn.querySelector('i');
-                if (btnIcon) {
-                    btnIcon.className = 'fas fa-check';
-                }
-                loadingSpinner.classList.add('hidden');
-                executeBtn.disabled = true;
-                executeBtn.classList.remove('btn-primary');
-                executeBtn.classList.add('btn-success');
-                executeBtn.style.opacity = '1';
-            });
-        }
-        
-        // 文件选择处理函数
-        function handleFileSelect(input, infoDiv, type) {
-            return function(e) {
-                let file;
-                if (e.type === 'change') {
-                    // 传统文件选择
-                    file = e.target.files[0];
-                } else {
-                    // 拖拽文件上传
-                    e.preventDefault();
-                    e.stopPropagation();
-                    file = e.dataTransfer.files[0];
-                    // 将文件设置到对应的 input 元素中
-                    input.files = e.dataTransfer.files;
-                }
-                
-                if (file) {
-                    // 获取上传区域元素
-                    const uploadArea = input.closest('.file-upload-area');
-                    // 更新上传区域样式
-                    uploadArea.classList.add('file-selected');
-                    // 更新上传标题
-                    const uploadTitle = uploadArea.querySelector('.upload-title');
-                    uploadTitle.textContent = `已选择: ${file.name}`;
-                    // 更新文件信息
-                    infoDiv.textContent = file.path;
-                    infoDiv.classList.remove('hidden');
-                    updateStatus(`已选择${type === 'baseline' ? '基准' : '比较'}文件：${file.name}`, 'info');
-                }
-            };
-        }
-        
-        // 拖拽事件处理函数
-        function handleDragEvent(input, infoDiv, type) {
-            const uploadGroup = input.closest('.upload-group');
-            
-            return {
-                dragenter: function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    uploadGroup.classList.add('drag-over');
-                },
-                dragover: function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    uploadGroup.classList.add('drag-over');
-                },
-                dragleave: function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    uploadGroup.classList.remove('drag-over');
-                },
-                drop: function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    uploadGroup.classList.remove('drag-over');
-                    handleFileSelect(input, infoDiv, type)(e);
-                }
-            };
-        }
-        
-        // 基准文件事件处理
-        const baselineEvents = handleDragEvent(baselineFile, baselineInfo, 'baseline');
-        
-        // 为基准文件上传组添加拖拽事件
-        const baselineGroup = baselineFile.closest('.upload-group');
-        baselineGroup.addEventListener('dragenter', baselineEvents.dragenter);
-        baselineGroup.addEventListener('dragover', baselineEvents.dragover);
-        baselineGroup.addEventListener('dragleave', baselineEvents.dragleave);
-        baselineGroup.addEventListener('drop', baselineEvents.drop);
-        
-        // 基准文件传统选择事件
-        baselineFile.addEventListener('change', handleFileSelect(baselineFile, baselineInfo, 'baseline'));
-        
-        // 比较文件事件处理
-        const compareEvents = handleDragEvent(compareFile, compareInfo, 'compare');
-        
-        // 为比较文件上传组添加拖拽事件
-        const compareGroup = compareFile.closest('.upload-group');
-        compareGroup.addEventListener('dragenter', compareEvents.dragenter);
-        compareGroup.addEventListener('dragover', compareEvents.dragover);
-        compareGroup.addEventListener('dragleave', compareEvents.dragleave);
-        compareGroup.addEventListener('drop', compareEvents.drop);
-        
-        // 比较文件传统选择事件
-        compareFile.addEventListener('change', handleFileSelect(compareFile, compareInfo, 'compare'));
-        
-        // 表单提交处理
-        compareForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            if (!baselineFile.files[0] || !compareFile.files[0]) {
-                updateStatus('请选择两个要比较的文件', 'error');
-                return;
+                });
             }
             
-            // 添加按钮点击动画
-            executeBtn.classList.add('btn-clicked');
-            setTimeout(() => {
-                executeBtn.classList.remove('btn-clicked');
-            }, 300);
+            // 文件选择处理函数
+            function handleFileSelect(input, infoDiv, type) {
+                return function(e) {
+                    let file;
+                    if (e.type === 'change') {
+                        // 传统文件选择
+                        file = e.target.files[0];
+                    } else {
+                        // 拖拽文件上传
+                        e.preventDefault();
+                        e.stopPropagation();
+                        file = e.dataTransfer.files[0];
+                        // 将文件设置到对应的 input 元素中
+                        input.files = e.dataTransfer.files;
+                    }
+                    
+                    if (file) {
+                        // 获取上传区域元素
+                        const uploadArea = input.closest('.file-upload-area');
+                        // 更新上传区域样式
+                        uploadArea.classList.add('file-selected');
+                        // 更新上传标题
+                        const uploadTitle = uploadArea.querySelector('.upload-title');
+                        uploadTitle.textContent = `已选择: ${file.name}`;
+                        // 更新文件信息
+                        infoDiv.textContent = file.path;
+                        infoDiv.classList.remove('hidden');
+                        updateStatus(`已选择${type === 'baseline' ? '基准' : '比较'}文件：${file.name}`, 'info');
+                    }
+                };
+            }
             
-            clearResults();
-            updateProgress(0);
-            showLoading(true);
+            // 拖拽事件处理函数
+            function handleDragEvent(input, infoDiv, type) {
+                const uploadGroup = input.closest('.upload-group');
+                
+                return {
+                    dragenter: function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        uploadGroup.classList.add('drag-over');
+                    },
+                    dragover: function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        uploadGroup.classList.add('drag-over');
+                    },
+                    dragleave: function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        uploadGroup.classList.remove('drag-over');
+                    },
+                    drop: function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        uploadGroup.classList.remove('drag-over');
+                        handleFileSelect(input, infoDiv, type)(e);
+                    }
+                };
+            }
             
-            try {
-                // 发送请求
-                updateStatus('正在上传文件...');
-                updateProgress(5);
-                
-                // 创建FormData - 优化点：提前准备数据
-                updateStatus('正在准备文件数据...');
-                updateProgress(15);
-                
-                const formData = new FormData(compareForm);
-                
-                // 开始比较文件
-                updateStatus('开始比较文件...');
+            // 基准文件事件处理
+            const baselineEvents = handleDragEvent(baselineFile, baselineInfo, 'baseline');
             
-                // 使用流式请求处理，获取实时进度
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 300000); // 5分钟超时
+            // 为基准文件上传组添加拖拽事件
+            const baselineGroup = baselineFile.closest('.upload-group');
+            baselineGroup.addEventListener('dragenter', baselineEvents.dragenter);
+            baselineGroup.addEventListener('dragover', baselineEvents.dragover);
+            baselineGroup.addEventListener('dragleave', baselineEvents.dragleave);
+            baselineGroup.addEventListener('drop', baselineEvents.drop);
             
-                // 添加实时进度更新
-                updateStatus('正在上传并处理文件...');
-                updateProgress(25);
+            // 基准文件传统选择事件
+            baselineFile.addEventListener('change', handleFileSelect(baselineFile, baselineInfo, 'baseline'));
             
-                const response = await fetch('/api/compare', {
-                    method: 'POST',
-                    body: formData,
-                    signal: controller.signal
-                });
+            // 比较文件事件处理
+            const compareEvents = handleDragEvent(compareFile, compareInfo, 'compare');
+            
+            // 为比较文件上传组添加拖拽事件
+            const compareGroup = compareFile.closest('.upload-group');
+            compareGroup.addEventListener('dragenter', compareEvents.dragenter);
+            compareGroup.addEventListener('dragover', compareEvents.dragover);
+            compareGroup.addEventListener('dragleave', compareEvents.dragleave);
+            compareGroup.addEventListener('drop', compareEvents.drop);
+            
+            // 比较文件传统选择事件
+            compareFile.addEventListener('change', handleFileSelect(compareFile, compareInfo, 'compare'));
+            
+            // 检查配置是否完整，更新开始比较按钮状态
+            function checkConfigComplete() {
+                const headerRow = headerRowInput.value;
+                const keyFields = keyFieldsInput.value;
+                const hasFiles = baselineFile.files[0] && compareFile.files[0];
                 
-                clearTimeout(timeoutId);
-                updateProgress(50);
+                executeBtn.disabled = !hasFiles || !headerRow || !keyFields;
+            }
+            
+            // 监听文件选择变化，更新按钮状态
+            baselineFile.addEventListener('change', checkConfigComplete);
+            compareFile.addEventListener('change', checkConfigComplete);
+            headerRowInput.addEventListener('change', checkConfigComplete);
+            keyFieldsInput.addEventListener('change', checkConfigComplete);
+            
+            // 初始化表头行号为1
+            headerRowInput.value = '1';
+            // 初始化特征列输入框为默认值
+            keyFieldsInput.value = '1,2,3';
+            selectedFeatureCols = [1, 2, 3]; // 默认选择前3列
+            
+            // 初始化按钮状态
+            checkConfigComplete();
+            
+            // 监听表头行号变化，清空预览数据和特征列选择，确保下次获取时基于最新的表头行号
+            headerRowInput.addEventListener('change', () => {
+                currentPreviewData = [];
+                currentHeaderData = [];
+                // 重置特征列选择
+                selectedFeatureCols = [1, 2, 3]; // 默认选择前3列
+                keyFieldsInput.value = '1,2,3';
+                // 更新按钮状态
+                checkConfigComplete();
+            });
+            
+            // 选择特征列按钮事件处理
+            selectKeyFieldsBtn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                e.preventDefault();
                 
-                if (!response.ok) {
-                    updateStatus('服务器返回错误，正在处理...', 'info');
-                    updateProgress(60);
-                    const errorData = await response.json().catch(() => ({}));
-                    throw new Error(errorData.error || `HTTP错误: ${response.status}`);
+                if (!baselineFile.files[0]) {
+                    updateStatus('请先选择基准文件', 'error');
+                    return;
                 }
                 
-                updateStatus('正在解析比较结果...');
-                updateProgress(70);
+                if (!headerRowInput.value) {
+                    updateStatus('请先通过选择表头设置表头行号', 'error');
+                    return;
+                }
                 
-                const result = await response.json();
-                updateProgress(90);
+                // 每次点击都重新获取基于当前表头行的列信息
+                showLoading(true);
+                updateStatus('正在获取基于当前表头行的列信息...');
                 
-                if (result.success) {
-                    updateProgress(100);
+                try {
+                    const formData = new FormData();
+                    formData.append('baselineFile', baselineFile.files[0]);
+                    formData.append('header_row', parseInt(headerRowInput.value));
                     
-                    // 显示结果
-                    resultsSection.classList.remove('hidden');
-                    if (result.resultFiles.length > 0) {
-                        // 显示所有结果文件
-                        result.resultFiles.forEach(filePath => {
-                            addResultItem(filePath);
-                        });
+                    const response = await fetch('/api/preview', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`获取列信息失败: ${response.statusText}`);
                     }
                     
-                    // 显示Python脚本输出 - 显示差异统计信息
-                    if (result.stdout) {
-                        const lines = result.stdout.split('\n').filter(line => line.trim());
+                    const result = await response.json();
+                    if (result.success) {
+                        currentPreviewData = result.preview_data;
                         
-                        // 显示所有差异统计相关的行
-                        const statsLines = lines.filter(line => 
-                            line.includes('比较完成！共发现') ||
-                            line.includes('已标记') ||
-                            line.includes('行删除') ||
-                            line.includes('行新增') ||
-                            line.includes('数值变化')
-                        );
+                        // 总是从预览数据中提取对应行的数据，确保与当前选择的表头行号一致
+                        const selectedHeaderRow = parseInt(headerRowInput.value);
+                        const headerRowData = currentPreviewData.find(row => row.row === selectedHeaderRow);
                         
-                        // 显示统计信息
-                        statsLines.forEach(line => {
-                            if (line.includes('比较完成！共发现')) {
-                                updateStatus(line, 'success');
-                            } else {
-                                updateStatus(line, 'info');
-                            }
-                        });
-                    }
-                    
-                    // 比较成功，显示完成状态
-                    showCompleted();
-                } else {
-                    updateStatus(`比较失败：${result.error}`, 'error');
-                    if (result.stderr) {
-                        updateStatus('错误详情:', 'error');
-                        const lines = result.stderr.split('\n').filter(line => line.trim());
-                        // 最多显示50行错误信息
-                        const displayLines = lines.slice(0, 50);
-                        displayLines.forEach(line => {
-                            updateStatus(line, 'error');
-                        });
-                        if (lines.length > 50) {
-                            updateStatus(`... 省略了 ${lines.length - 50} 行错误信息`, 'error');
+                        if (headerRowData) {
+                            // 从预览数据中提取对应行的列信息
+                            currentHeaderData = headerRowData.data.map((name, index) => ({
+                                col: index + 1,
+                                name: name || `列${index + 1}`
+                            }));
+                        } else {
+                            currentHeaderData = [];
                         }
+                        
+                        updateStatus('列信息获取成功，可选择特征列', 'success');
+                    } else {
+                        updateStatus(`获取列信息失败: ${result.detail}`, 'error');
+                        return;
+                    }
+                } catch (error) {
+                    updateStatus(`获取列信息失败: ${error.message}`, 'error');
+                    console.error('获取列信息错误:', error);
+                    return;
+                } finally {
+                    showLoading(false);
+                }
+                
+                // 渲染特征列选择列表
+                renderFeatureColsList();
+                featureColsSection.classList.remove('hidden');
+            });
+            
+            // 预览功能
+            previewBtn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                
+                // 调试日志
+                console.log('预览按钮被点击');
+                
+                if (!baselineFile.files[0]) {
+                    updateStatus('请先选择基准文件', 'error');
+                    console.log('没有选择基准文件');
+                    return;
+                }
+                
+                showLoading(true);
+                updateStatus('正在生成文件预览以选择表头...');
+                
+                try {
+                    const formData = new FormData();
+                    formData.append('baselineFile', baselineFile.files[0]);
+                    formData.append('header_row', parseInt(headerRowInput.value || '1'));
+                    
+                    const response = await fetch('/api/preview', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`生成预览失败: ${response.statusText}`);
                     }
                     
+                    const result = await response.json();
+                    if (result.success) {
+                        currentPreviewData = result.preview_data;
+                        currentHeaderData = result.header_data;
+                        
+                        renderPreviewTable();
+                        previewSection.classList.remove('hidden');
+                        updateStatus('文件预览生成成功，可选择表头行', 'success');
+                    } else {
+                        updateStatus(`生成预览失败: ${result.detail}`, 'error');
+                        console.log('生成预览失败:', result.detail);
+                    }
+                } catch (error) {
+                    updateStatus(`生成预览失败: ${error.message}`, 'error');
+                    console.error('预览错误:', error);
+                } finally {
+                    showLoading(false);
+                }
+            });
+            
+            // 渲染预览表格
+            function renderPreviewTable() {
+                // 清空表格
+                previewHeader.innerHTML = '';
+                previewBody.innerHTML = '';
+                
+                // 添加表头（行号列）
+                const rowNumHeader = document.createElement('th');
+                rowNumHeader.textContent = '行号';
+                rowNumHeader.style.padding = '8px';
+                rowNumHeader.style.border = '1px solid #ddd';
+                rowNumHeader.style.fontWeight = 'bold';
+                previewHeader.appendChild(rowNumHeader);
+                
+                // 添加数据列表头
+                const maxCols = currentPreviewData[0]?.data.length || 0;
+                for (let i = 0; i < maxCols; i++) {
+                    const th = document.createElement('th');
+                    th.textContent = `列${i + 1}`;
+                    th.style.padding = '8px';
+                    th.style.border = '1px solid #ddd';
+                    th.style.fontWeight = 'bold';
+                    th.style.minWidth = '100px';
+                    previewHeader.appendChild(th);
+                }
+                
+                // 添加数据行
+                currentPreviewData.forEach(row => {
+                    const tr = document.createElement('tr');
+                    tr.style.cursor = 'pointer';
+                    tr.style.transition = 'background-color 0.2s';
+                    
+                    // 高亮表头行
+                    if (row.row === parseInt(headerRowInput.value)) {
+                        tr.style.backgroundColor = 'rgba(102, 126, 234, 0.1)';
+                        tr.style.border = '2px solid var(--primary)';
+                    }
+                    
+                    // 点击行选择表头行
+                    tr.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        headerRowInput.value = row.row;
+                        // 重新渲染表格以高亮选中的行
+                        renderPreviewTable();
+                        // 更新按钮状态
+                        checkConfigComplete();
+                    });
+                    
+                    // 添加行号
+                    const rowNumCell = document.createElement('td');
+                    rowNumCell.textContent = row.row;
+                    rowNumCell.style.padding = '8px';
+                    rowNumCell.style.border = '1px solid #ddd';
+                    rowNumCell.style.fontWeight = 'bold';
+                    rowNumCell.style.backgroundColor = '#f8f9ff';
+                    tr.appendChild(rowNumCell);
+                    
+                    // 添加数据单元格
+                    row.data.forEach(cellValue => {
+                        const td = document.createElement('td');
+                        td.textContent = cellValue;
+                        td.style.padding = '8px';
+                        td.style.border = '1px solid #ddd';
+                        td.style.whiteSpace = 'nowrap';
+                        td.style.overflow = 'hidden';
+                        td.style.textOverflow = 'ellipsis';
+                        tr.appendChild(td);
+                    });
+                    
+                    previewBody.appendChild(tr);
+                });
+            }
+            
+            // 确认表头行
+            confirmHeaderRowBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                const selectedRow = parseInt(headerRowInput.value);
+                updateStatus(`已选择表头行: ${selectedRow}`, 'success');
+                
+                // 关闭预览窗口，不自动弹出选择列
+                previewSection.classList.add('hidden');
+                
+                // 清空当前预览数据，确保下次获取时基于最新的表头行号
+                currentPreviewData = [];
+                currentHeaderData = [];
+                
+                // 更新按钮状态
+                checkConfigComplete();
+            });
+            
+            // 关闭预览
+            closePreviewBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                previewSection.classList.add('hidden');
+            });
+            
+            // 渲染特征列选择列表
+            function renderFeatureColsList() {
+                featureColsList.innerHTML = '';
+                
+                currentHeaderData.forEach(col => {
+                    const colItem = document.createElement('div');
+                    colItem.style.display = 'flex';
+                    colItem.style.alignItems = 'center';
+                    colItem.style.gap = '8px';
+                    colItem.style.padding = '8px 12px';
+                    colItem.style.border = '1px solid #e0e0e0';
+                    colItem.style.borderRadius = '6px';
+                    colItem.style.background = 'white';
+                    colItem.style.transition = 'all 0.2s';
+                    
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.value = col.col;
+                    checkbox.checked = selectedFeatureCols.includes(col.col);
+                    checkbox.addEventListener('change', () => {
+                        if (checkbox.checked) {
+                            if (selectedFeatureCols.length < 6) {
+                                selectedFeatureCols.push(col.col);
+                                selectedFeatureCols.sort((a, b) => a - b);
+                            } else {
+                                checkbox.checked = false;
+                                updateStatus('最多只能选择6列特征列', 'error');
+                            }
+                        } else {
+                            selectedFeatureCols = selectedFeatureCols.filter(c => c !== col.col);
+                        }
+                    });
+                    
+                    const label = document.createElement('label');
+                    label.textContent = `${col.col}: ${col.name}`;
+                    label.style.fontSize = '14px';
+                    label.style.cursor = 'pointer';
+                    
+                    colItem.appendChild(checkbox);
+                    colItem.appendChild(label);
+                    featureColsList.appendChild(colItem);
+                });
+            }
+            
+            // 确认特征列
+            confirmFeatureColsBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                if (selectedFeatureCols.length === 0) {
+                    updateStatus('请至少选择1列特征列', 'error');
+                    return;
+                }
+                
+                keyFieldsInput.value = selectedFeatureCols.join(',');
+                updateStatus(`已选择特征列: ${selectedFeatureCols.join(',')}`, 'success');
+                featureColsSection.classList.add('hidden');
+                
+                // 更新按钮状态
+                checkConfigComplete();
+            });
+            
+            // 关闭特征列选择
+            closeFeatureColsBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                featureColsSection.classList.add('hidden');
+            });
+            
+            // 表单提交处理
+            compareForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                if (!baselineFile.files[0] || !compareFile.files[0]) {
+                    updateStatus('请选择两个要比较的文件', 'error');
+                    return;
+                }
+                
+                const headerRow = headerRowInput.value;
+                const keyFields = keyFieldsInput.value;
+                
+                if (!headerRow) {
+                    updateStatus('请通过选择表头设置表头行号', 'error');
+                    return;
+                }
+                
+                if (!keyFields) {
+                    updateStatus('请通过选择表头设置特征列', 'error');
+                    return;
+                }
+                
+                // 添加按钮点击动画
+                executeBtn.classList.add('btn-clicked');
+                setTimeout(() => {
+                    executeBtn.classList.remove('btn-clicked');
+                }, 300);
+                
+                clearResults();
+                updateProgress(0);
+                showLoading(true);
+                
+                try {
+                    // 发送请求
+                    updateStatus('正在上传文件...');
+                    updateProgress(5);
+                    
+                    // 创建FormData - 优化点：提前准备数据
+                    updateStatus('正在准备文件数据...');
+                    updateProgress(15);
+                    
+                    const formData = new FormData(compareForm);
+                    
+                    // 开始比较文件
+                    updateStatus('开始比较文件...');
+                
+                    // 使用流式请求处理，获取实时进度
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 300000); // 5分钟超时
+                
+                    // 添加实时进度更新
+                    updateStatus('正在上传并处理文件...');
+                    updateProgress(25);
+                
+                    const response = await fetch('/api/compare', {
+                        method: 'POST',
+                        body: formData,
+                        signal: controller.signal
+                    });
+                    
+                    clearTimeout(timeoutId);
+                    updateProgress(50);
+                    
+                    if (!response.ok) {
+                        updateStatus('服务器返回错误，正在处理...', 'info');
+                        updateProgress(60);
+                        const errorData = await response.json().catch(() => ({}));
+                        throw new Error(errorData.error || `HTTP错误: ${response.status}`);
+                    }
+                    
+                    updateStatus('正在解析比较结果...');
+                    updateProgress(70);
+                    
+                    const result = await response.json();
+                    updateProgress(90);
+                    
+                    if (result.success) {
+                        updateProgress(100);
+                        
+                        // 显示结果
+                        resultsSection.classList.remove('hidden');
+                        if (result.resultFiles.length > 0) {
+                            // 显示所有结果文件
+                            result.resultFiles.forEach(filePath => {
+                                addResultItem(filePath);
+                            });
+                        }
+                        
+                        // 显示Python脚本输出 - 显示差异统计信息
+                        if (result.stdout) {
+                            const lines = result.stdout.split('\n').filter(line => line.trim());
+                            
+                            // 显示所有差异统计相关的行
+                            const statsLines = lines.filter(line => 
+                                line.includes('比较完成！共发现') ||
+                                line.includes('已标记') ||
+                                line.includes('行删除') ||
+                                line.includes('行新增') ||
+                                line.includes('数值变化')
+                            );
+                            
+                            // 显示统计信息
+                            statsLines.forEach(line => {
+                                if (line.includes('比较完成！共发现')) {
+                                    updateStatus(line, 'success');
+                                } else {
+                                    updateStatus(line, 'info');
+                                }
+                            });
+                        }
+                        
+                        // 比较成功，显示完成状态
+                        showCompleted();
+                    } else {
+                        updateStatus(`比较失败：${result.error}`, 'error');
+                        if (result.stderr) {
+                            updateStatus('错误详情:', 'error');
+                            const lines = result.stderr.split('\n').filter(line => line.trim());
+                            // 最多显示50行错误信息
+                            const displayLines = lines.slice(0, 50);
+                            displayLines.forEach(line => {
+                                updateStatus(line, 'error');
+                            });
+                            if (lines.length > 50) {
+                                updateStatus(`... 省略了 ${lines.length - 50} 行错误信息`, 'error');
+                            }
+                        }
+                        
+                        // 比较失败，恢复正常状态
+                        showLoading(false);
+                    }
+                } catch (error) {
+                    updateStatus(`比较失败：${error.message}`, 'error');
+                    console.error('比较错误:', error);
                     // 比较失败，恢复正常状态
                     showLoading(false);
                 }
-        } catch (error) {
-            updateStatus(`比较失败：${error.message}`, 'error');
-            console.error('比较错误:', error);
-            // 比较失败，恢复正常状态
-            showLoading(false);
-        }
-        });
-        
-        // 初始化
-        createParticles();
-        updateStatus('准备就绪...');
-        
-        // 确保初始状态正确显示
-        requestAnimationFrame(() => {
-            status.scrollTop = status.scrollHeight;
-        });
-        
-        // 自动获取项目信息：最新发行版标签和最后一次提交日期
-        document.addEventListener("DOMContentLoaded", function() {
-            console.log('开始获取项目信息...');
-            const versionElement = document.getElementById('release-version');
-            const updateDateElement = document.getElementById('last-update-date');
-            const CACHE_KEY = 'project_info_cache';
-            const CACHE_EXPIRE = 3600000; // 1小时（毫秒）
-
-            // 检查缓存
-            console.log('检查缓存...');
-            const cachedData = localStorage.getItem(CACHE_KEY);
-            if (cachedData) {
-                const { version, lastUpdateDate, timestamp } = JSON.parse(cachedData);
-                if (Date.now() - timestamp < CACHE_EXPIRE) {
-                    console.log('使用缓存数据:', { version, lastUpdateDate });
-                    versionElement.textContent = version;
-                    updateDateElement.textContent = lastUpdateDate;
-                    return; // 直接使用缓存，不发起请求
-                }
-            }
-
-            // 缓存过期，发起请求（使用后端代理避免跨域问题）
-            console.log('缓存过期，发起请求...');
-            fetch('/api/get_project_info', {
-                method: 'GET',
-                headers: {
-                    'Accept': 'application/json'
-                }
-            })
-            .then(response => {
-                console.log('响应状态:', response.status);
-                if (!response.ok) {
-                    throw new Error(`HTTP错误: ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                console.log('获取到的数据:', data);
-                // 处理版本号，不使用默认值
-                let version = data.version;
-                
-                // 处理最后更新日期，不使用默认值
-                let updateDate = data.lastUpdateDate;
-
-                // 更新页面显示
-                console.log('更新页面显示:', { version, updateDate });
-                versionElement.textContent = version;
-                updateDateElement.textContent = updateDate;
-
-                // 存入缓存
-                localStorage.setItem(CACHE_KEY, JSON.stringify({
-                    version,
-                    lastUpdateDate: updateDate,
-                    timestamp: Date.now()
-                }));
-            })
-            .catch(error => {
-                console.error('获取项目信息失败:', error);
             });
+            
+            updateStatus('准备就绪...');
+            
+            // 确保初始状态正确显示
+            requestAnimationFrame(() => {
+                status.scrollTop = status.scrollHeight;
+            });
+            
+            // 重置选择按钮事件处理
+            resetBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                
+                // 重置文件输入
+                baselineFile.value = '';
+                compareFile.value = '';
+                
+                // 重置上传区域样式
+                const baselineUploadArea = baselineFile.closest('.file-upload-area');
+                const compareUploadArea = compareFile.closest('.file-upload-area');
+                baselineUploadArea.classList.remove('file-selected');
+                compareUploadArea.classList.remove('file-selected');
+                
+                // 重置上传区域标题
+                const baselineTitle = baselineUploadArea.querySelector('.upload-title');
+                const compareTitle = compareUploadArea.querySelector('.upload-title');
+                baselineTitle.textContent = '基准文件';
+                compareTitle.textContent = '比较文件';
+                
+                // 清空文件信息显示
+                baselineInfo.textContent = '';
+                baselineInfo.classList.add('hidden');
+                compareInfo.textContent = '';
+                compareInfo.classList.add('hidden');
+                
+                // 重置配置选项
+                headerRowInput.value = '1';
+                keyFieldsInput.value = '1,2,3';
+                selectedFeatureCols = [1, 2, 3];
+                
+                // 清空预览数据
+                currentPreviewData = [];
+                currentHeaderData = [];
+                
+                // 关闭所有预览窗口
+                previewSection.classList.add('hidden');
+                featureColsSection.classList.add('hidden');
+                
+                // 清空状态和结果
+                status.innerHTML = '';
+                clearResults();
+                progressFill.style.width = '0%';
+                
+                // 更新按钮状态
+                showLoading(false);
+                checkConfigComplete();
+                
+                updateStatus('已重置所有选择', 'info');
+            });
+            
+            // 自动获取项目信息：最新发行版标签和最后一次提交日期
+            function fetchProjectInfo() {
+                console.log('开始获取项目信息...');
+                const versionElement = document.getElementById('release-version');
+                const updateDateElement = document.getElementById('last-update-date');
+                const CACHE_KEY = 'project_info_cache';
+                const CACHE_EXPIRE = 3600000; // 1小时（毫秒）
+
+                // 检查缓存
+                console.log('检查缓存...');
+                const cachedData = localStorage.getItem(CACHE_KEY);
+                if (cachedData) {
+                    const { version, lastUpdateDate, timestamp } = JSON.parse(cachedData);
+                    if (Date.now() - timestamp < CACHE_EXPIRE) {
+                        console.log('使用缓存数据:', { version, lastUpdateDate });
+                        versionElement.textContent = version;
+                        updateDateElement.textContent = lastUpdateDate;
+                        return; // 直接使用缓存，不发起请求
+                    }
+                }
+
+                // 缓存过期，发起请求（使用后端代理避免跨域问题）
+                console.log('缓存过期，发起请求...');
+                fetch('/api/get_project_info', {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                })
+                .then(response => {
+                    console.log('响应状态:', response.status);
+                    if (!response.ok) {
+                        throw new Error(`HTTP错误: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('获取到的数据:', data);
+                    // 处理版本号，不使用默认值
+                    let version = data.version;
+                    
+                    // 处理最后更新日期，不使用默认值
+                    let updateDate = data.lastUpdateDate;
+
+                    // 更新页面显示
+                    console.log('更新页面显示:', { version, updateDate });
+                    versionElement.textContent = version;
+                    updateDateElement.textContent = updateDate;
+
+                    // 存入缓存
+                    localStorage.setItem(CACHE_KEY, JSON.stringify({
+                        version,
+                        lastUpdateDate: updateDate,
+                        timestamp: Date.now()
+                    }));
+                })
+                .catch(error => {
+                    console.error('获取项目信息失败:', error);
+                });
+            }
+            
+            // 调用获取项目信息的函数
+            fetchProjectInfo();
         });
     </script>
 </body>

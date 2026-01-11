@@ -305,7 +305,7 @@ def compare_excel_files(baseline_path, compare_path, output_baseline_path, outpu
     
     # 输出数值变化行计数
     if changes_count > 0:
-        log_queue.put(f"\n已标记 {changes_count} 行数值变化（黄色）")
+        log_queue.put(f"\n已标记 {changes_count} 处数值变化（黄色）")
 
     # 计算总差异数
     total_changes = changes_count + added_rows_count + deleted_rows_count
@@ -784,7 +784,7 @@ class ExcelCompareGUI(ctk.CTk):
         
         self.feature_cols_preview_label = ctk.CTkLabel(
             self.feature_cols_preview_frame, 
-            text="特征列用于判断行的增删变化，默认使用列: 1, 2, 3", 
+            text="请点击'选择'按钮查看并选择特征列，最多支持6列，默认使用列: 1,2,3", 
             font=("微软雅黑", 10),
             text_color="gray50"
         )
@@ -792,7 +792,7 @@ class ExcelCompareGUI(ctk.CTk):
         
         ctk.CTkLabel(
             config_section, 
-            text="提示: 特征列用于判断行的增删变化，特征列内容的变化不视为数值变化，最多支持6列", 
+            text="提示: 特征列用于判断行的增删变化，特征列内容的变化不视为数值变化", 
             font=("微软雅黑", 12, "bold"),
             text_color="#FF6B35"
         ).pack(anchor="w", pady=(5, 0))
