@@ -35,8 +35,8 @@ app.add_middleware(
 
 # 定义结果文件夹
 PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
-# 指向项目根目录的results文件夹
-RESULTS_FOLDER = os.path.join(os.path.dirname(PROJECT_ROOT), "results")
+# 在Vercel环境中，只有/tmp目录是可写的
+RESULTS_FOLDER = "/tmp/results"
 os.makedirs(RESULTS_FOLDER, exist_ok=True)
 
 # 挂载静态文件到/static路径

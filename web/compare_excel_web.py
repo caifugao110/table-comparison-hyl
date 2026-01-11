@@ -448,10 +448,8 @@ def compare_excel_files(baseline_path, compare_path, output_baseline_path, outpu
         if row in ws_baseline_saved.row_dimensions:
             ws_diff.row_dimensions[row].height = ws_baseline_saved.row_dimensions[row].height
     
-    # 保存差异结果文件
-    # 指向项目根目录的results文件夹
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    results_folder = os.path.join(os.path.dirname(current_dir), "results")
+    # 保存差异结果文件到与输出文件相同的目录
+    results_folder = os.path.dirname(output_baseline_path)
     diff_output_path = os.path.join(results_folder, f"{original_filename}_差异结果_{timestamp}.xlsx")
     try:
         wb_diff.save(diff_output_path)
