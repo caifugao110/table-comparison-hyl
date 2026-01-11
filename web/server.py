@@ -35,8 +35,8 @@ app.add_middleware(
 
 # 定义结果文件夹
 PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
-# 在Vercel环境中，只有/tmp目录是可写的
-RESULTS_FOLDER = "/tmp/results"
+# 指向项目根目录的tmp/results文件夹
+RESULTS_FOLDER = os.path.join(os.path.dirname(PROJECT_ROOT), "tmp", "results")
 os.makedirs(RESULTS_FOLDER, exist_ok=True)
 
 # 挂载静态文件到/static路径
@@ -234,12 +234,13 @@ async def compare_excel(
         # 生成差异结果文件路径
         diff_file = os.path.join(RESULTS_FOLDER, f"{original_filename}_差异结果_{timestamp}.xlsx")
         
-        # 收集所有结果文件
+        # 收集所有结果文件，只返回文件名
         result_files = []
         expected_files = [diff_file, result_baseline, result_compare]
         for expected_file in expected_files:
             if os.path.exists(expected_file):
-                result_files.append(expected_file)
+                # 只返回文件名，不返回完整路径
+                result_files.append(os.path.basename(expected_file))
         
         # 清理临时文件
         os.unlink(baseline_file_path)

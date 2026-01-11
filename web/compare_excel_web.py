@@ -512,8 +512,8 @@ if __name__ == "__main__":
     
     # 创建results文件夹（如果不存在）
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    # 指向项目根目录的results文件夹
-    results_folder = os.path.join(os.path.dirname(current_dir), "results")
+    # 指向项目根目录的tmp/results文件夹
+    results_folder = os.path.join(os.path.dirname(current_dir), "tmp", "results")
     os.makedirs(results_folder, exist_ok=True)
     
     compare_excel_files(baseline_path, compare_path, output_baseline_path, output_compare_path, original_filename, timestamp)

@@ -1,7 +1,7 @@
 # Ignore contents of directories but keep the directories
 from/*
 my/*
-results/*
+tmp/*
 !.gitkeep
 
 # Ignore Python cache files

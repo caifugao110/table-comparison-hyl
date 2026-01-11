@@ -539,7 +539,7 @@ class ExcelCompareGUI(ctk.CTk):
         # 配置变量
         self.current_dir = os.path.dirname(os.path.abspath(__file__))
         self.parent_dir = os.path.dirname(self.current_dir)
-        self.results_folder = os.path.join(self.parent_dir, "results")
+        self.results_folder = os.path.join(self.parent_dir, "tmp", "results")
         os.makedirs(self.results_folder, exist_ok=True)
         
         self.baseline_file = ""
