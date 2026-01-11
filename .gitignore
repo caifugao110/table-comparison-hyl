@@ -2,6 +2,7 @@
 from/*
 my/*
 tmp/*
+results/*
 !.gitkeep
 
 # Ignore Python cache files

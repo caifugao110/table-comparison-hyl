@@ -129,7 +129,7 @@ pip install openpyxl fastapi uvicorn python-multipart customtkinter pillow reque
 1. **启动 Web 服务器** 🚀
    ```bash
    cd web
-   python fastapi_server.py
+   python server.py
    ```
 
 2. **访问 Web 界面** 🌐
@@ -168,8 +168,10 @@ table-comparison-hyl/
 │   └── .gitkeep            # Git占位文件
 ├── web/                     # Web界面相关文件 🖥️
 │   ├── compare_excel_web.py  # Web版核心比较逻辑 🐍
-│   ├── fastapi_server.py     # FastAPI Web服务器 🚀
-│   └── index.html            # Web界面HTML文件 📄
+│   ├── server.py             # FastAPI Web服务器 🚀
+│   ├── index.html            # Web界面HTML文件 📄
+│   ├── requirements.txt      # Web项目依赖配置 📋
+│   └── vercel.json           # Vercel部署配置 🚀
 ├── .gitignore              # Git忽略文件配置
 ├── README.md               # 项目说明文档 📖
 └── update_table_comparison.bat  # 更新脚本 📜
