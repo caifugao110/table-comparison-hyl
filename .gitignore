@@ -2,6 +2,7 @@
 from/*
 my/*
 tmp/*
+!tmp/results/
 results/*
 !.gitkeep
 
