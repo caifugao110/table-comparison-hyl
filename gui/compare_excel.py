@@ -508,34 +508,6 @@ class ExcelCompareGUI(ctk.CTk):
         self.geometry("1200x800")
         self.minsize(1000, 700)
         
-        # 设置窗口图标
-        self.app_icon = None
-        try:
-            # 使用PIL创建图标
-            from PIL import Image, ImageDraw, ImageFont, ImageTk
-            
-            # 创建一个32x32的图标
-            icon = Image.new('RGB', (32, 32), color=(102, 126, 234))
-            draw = ImageDraw.Draw(icon)
-            
-            # 绘制Excel表格和比较相关的图形
-            draw.rectangle([4, 8, 14, 24], fill='white', outline='white')
-            draw.rectangle([18, 8, 28, 24], fill='white', outline='white')
-            
-            # 在矩形上绘制比较符号
-            draw.text((8, 12), 'A', fill=(102, 126, 234), font=ImageFont.truetype('arial.ttf', 10))
-            draw.text((22, 12), 'B', fill=(102, 126, 234), font=ImageFont.truetype('arial.ttf', 10))
-            
-            # 绘制比较箭头
-            draw.line([15, 16, 18, 16], fill='white', width=2)
-            draw.polygon([18, 14, 18, 18, 21, 16], fill='white')
-            
-            # 保存图标以便后续使用
-            self.app_icon = ImageTk.PhotoImage(icon)
-            self.iconphoto(False, self.app_icon)
-        except Exception as e:
-            print(f"设置图标失败: {e}")
-        
         # 配置变量
         self.current_dir = os.path.dirname(os.path.abspath(__file__))
         self.parent_dir = os.path.dirname(self.current_dir)
@@ -547,6 +519,38 @@ class ExcelCompareGUI(ctk.CTk):
         self.running = False
         self.stop_event = threading.Event()
         self.worker_thread = None
+        
+        # 设置窗口图标
+        try:
+            # 处理PyInstaller打包后的图标路径
+            if hasattr(sys, '_MEIPASS'):
+                # 打包后，图标会在临时目录
+                icon_path = os.path.join(sys._MEIPASS, "ico", "compare_excel.ico")
+            else:
+                # 开发环境，使用原始路径
+                icon_path = os.path.join(self.parent_dir, "ico", "compare_excel.ico")
+            
+            # 检查图标文件是否存在
+            if os.path.exists(icon_path):
+                self.wm_iconbitmap(icon_path)
+            else:
+                raise FileNotFoundError(f"图标文件不存在: {icon_path}")
+        except Exception as e:
+            print(f"设置主窗口图标失败: {e}")
+            # 尝试使用PIL加载图标作为备选方案
+            try:
+                from PIL import Image, ImageTk
+                
+                if os.path.exists(icon_path):
+                    # 打开并调整图标大小
+                    icon = Image.open(icon_path)
+                    icon = icon.resize((32, 32), Image.LANCZOS)
+                    
+                    # 保存图标以便后续使用
+                    self.app_icon = ImageTk.PhotoImage(icon)
+                    self.iconphoto(False, self.app_icon)
+            except Exception as e2:
+                print(f"使用PIL设置图标也失败: {e2}")
         
         # 初始化界面
         self._init_widgets()
@@ -964,9 +968,22 @@ class ExcelCompareGUI(ctk.CTk):
             select_window.title("选择表头行号")
             select_window.geometry("900x400")
             
-            # 设置窗口图标与主窗口一致
-            if hasattr(self, 'app_icon') and self.app_icon:
-                select_window.iconphoto(False, self.app_icon)
+            # 设置窗口图标
+            try:
+                # 处理PyInstaller打包后的图标路径
+                if hasattr(sys, '_MEIPASS'):
+                    # 打包后，图标会在临时目录
+                    icon_path = os.path.join(sys._MEIPASS, "ico", "compare_excel.ico")
+                else:
+                    # 开发环境，使用原始路径
+                    icon_path = os.path.join(self.parent_dir, "ico", "compare_excel.ico")
+                
+                # 检查图标文件是否存在
+                if os.path.exists(icon_path):
+                    # 使用after方法在CTkToplevel自动设置图标后再重新设置我们自己的图标
+                    select_window.after(300, lambda: select_window.wm_iconbitmap(icon_path))
+            except Exception as e:
+                print(f"设置表头行选择窗口图标失败: {e}")
             
             # 居中显示
             select_window.transient(self)
@@ -1076,9 +1093,22 @@ class ExcelCompareGUI(ctk.CTk):
             select_window.geometry("400x300")
             select_window.resizable(False, False)
             
-            # 设置窗口图标与主窗口一致
-            if hasattr(self, 'app_icon') and self.app_icon:
-                select_window.iconphoto(False, self.app_icon)
+            # 设置窗口图标
+            try:
+                # 处理PyInstaller打包后的图标路径
+                if hasattr(sys, '_MEIPASS'):
+                    # 打包后，图标会在临时目录
+                    icon_path = os.path.join(sys._MEIPASS, "ico", "compare_excel.ico")
+                else:
+                    # 开发环境，使用原始路径
+                    icon_path = os.path.join(self.parent_dir, "ico", "compare_excel.ico")
+                
+                # 检查图标文件是否存在
+                if os.path.exists(icon_path):
+                    # 使用after方法在CTkToplevel自动设置图标后再重新设置我们自己的图标
+                    select_window.after(300, lambda: select_window.wm_iconbitmap(icon_path))
+            except Exception as e:
+                print(f"设置特征列选择窗口图标失败: {e}")
             
             # 居中显示
             select_window.transient(self)

@@ -1,10 +1,15 @@
 # Ignore contents of directories but keep the directories
 from/*
 my/*
-tmp/*
-!tmp/results/
 results/*
-!.gitkeep
+
+# tmp directory rules
+tmp/*
+!tmp/results/     # Keep tmp/results directory
+tmp/results/*     # Ignore files in tmp/results directory
 
 # Ignore Python cache files
 **/__pycache__/
+
+# Ignore EXE file
+exe/EXCEL文件比较工具.exe
