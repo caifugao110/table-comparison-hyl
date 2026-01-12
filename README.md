@@ -2,7 +2,7 @@
 
 ## 📝 项目简介
 
-本工具用于比较两个Excel文件，自动标记差异内容，包括数值变化、新增行和删除行，帮助用户快速识别两个Excel文件的数据差异。提供两种使用方式：GUI界面和Web界面。
+本工具用于比较两个Excel文件，自动标记差异内容，包括数值变化、新增行和删除行，帮助用户快速识别两个Excel文件的数据差异。提供三种使用方式：GUI界面、Web界面和EXE可执行文件。
 
 ## 🛠️ 项目依赖
 
@@ -98,7 +98,7 @@ pip install openpyxl fastapi uvicorn python-multipart customtkinter pillow reque
 
 ## 🚀 使用方法
 
-本工具提供两种使用方式：GUI界面方式和Web界面方式。
+本工具提供三种使用方式：GUI界面方式、Web界面方式和EXE可执行文件方式。
 
 ### 方式一：GUI 界面方式 🖥️
 
@@ -144,6 +144,24 @@ pip install openpyxl fastapi uvicorn python-multipart customtkinter pillow reque
    - 查看执行状态和结果文件
    - 点击「下载文件」下载生成的结果文件
 
+### 方式三：EXE 可执行文件方式 📦
+
+1. **获取可执行文件**
+   - 直接使用 `exe` 目录下的 `EXCEL文件比较工具.exe` 文件
+   - 或通过自动打包脚本生成：
+     ```bash
+     python exe/auto_pack.py
+     ```
+
+2. **运行可执行文件** ▶️
+   - 双击 `EXCEL文件比较工具.exe` 即可启动
+   - 无需安装 Python 环境
+
+3. **使用说明** 📤
+   - 功能与 GUI 界面方式完全一致
+   - 适合不熟悉 Python 或希望快速使用的用户
+   - 支持所有 GUI 界面的功能特性
+
 ## 📋 结果文件
 
 - 结果文件保存到 `results` 文件夹 📁
@@ -158,10 +176,16 @@ pip install openpyxl fastapi uvicorn python-multipart customtkinter pillow reque
 
 ```
 table-comparison-hyl/
+├── exe/                     # 自动打包工具目录 📦
+│   ├── EXCEL文件比较工具.exe    # 可执行文件 🚀
+│   └── auto_pack.py         # 自动打包脚本 🐍
 ├── from/                    # 比较文件目录 📁
 │   └── .gitkeep            # Git占位文件
 ├── gui/                     # GUI界面相关文件 🖥️
 │   └── compare_excel.py     # GUI版主程序文件 🐍
+├── ico/                     # 图标资源目录 🖼️
+│   ├── compare_excel.ico    # 应用程序图标 🎨
+│   └── get_ico.py           # 图标生成脚本 🐍
 ├── my/                      # 基准文件目录 📁
 │   └── .gitkeep            # Git占位文件
 ├── results/                 # 结果文件输出目录 📁
@@ -184,7 +208,7 @@ table-comparison-hyl/
 3. **公式处理**: 读取文件时仅加载数据，不加载公式 📈
 4. **结果文件**: 自动生成带时间戳的结果文件，避免覆盖现有文件 ⏰
 5. **只读属性**: 结果文件默认设置为只读，防止误修改 🔒
-6. **表头行号**: 默认表头行号为3，可根据实际情况自定义调整 🔢
+6. **表头行号**: 默认表头行号为孔，必须根据实际情况自定义调整 🔢
 
 ## 📌 扩展说明
 
@@ -194,6 +218,12 @@ table-comparison-hyl/
 3. 支持多种特征列格式（逗号分隔、空格分隔、范围格式如"1-3"）
 
 核心比较逻辑基于行匹配和列匹配，具有良好的通用性和可扩展性。🚀
+
+## 📄 版权信息
+
+- **版本**: V0.0.0（动态更新）
+- **版权**: Heyanlin © 2026
+- **项目地址**: https://github.com/caifugao110/table-comparison-hyl
 
 ## 🔧 特征列格式支持
 
@@ -216,9 +246,37 @@ table-comparison-hyl/
 - **详细信息**: 日志包含文件加载、行匹配、差异比较、结果保存等全过程信息
 - **错误提示**: 清晰的错误提示，便于问题定位
 
-## 🌐 主题支持
+## 🎨 主题支持
 
-GUI版本支持多种主题模式：
+GUI版本和EXE可执行文件支持多种主题模式和颜色主题：
+
+### 外观模式
 - **Light Mode**: 明亮主题，适合白天使用
 - **Dark Mode**: 暗黑主题，适合夜间使用
 - **System Mode**: 跟随系统主题，自动切换
+
+### 颜色主题
+- **Blue**: 蓝色主题（默认）
+- **Green**: 绿色主题
+- **Dark Blue**: 深蓝主题
+
+## 📦 自动打包工具
+
+提供自动打包脚本，用于生成可执行文件：
+
+```bash
+python exe/auto_pack.py
+```
+
+## 🖼️ 图标生成功能
+
+内置图标生成脚本，可根据需要自定义生成应用程序图标：
+
+```bash
+python ico/get_ico.py
+```
+
+### 图标特点
+- 128x128像素尺寸
+- 采用主题配色方案
+- 自动生成带表格比较标志的图标
